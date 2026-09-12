@@ -1,16 +1,19 @@
 <template>
   <div
     ref="root"
-    class="app-select"
-    :class="{ 'app-select--open': open }"
+    :class="['app-select', { 'app-select--open': open }]"
   >
     <button
       class="app-select__control"
       type="button"
+      role="combobox"
       :disabled="disabled"
       :aria-expanded="open"
       aria-haspopup="listbox"
+      :aria-controls="listId"
+      :aria-activedescendant="open ? optionId(highlighted) : undefined"
       @click="open = !open"
+      @keydown="onKeydown"
     >
       <span>{{ currentLabel }}</span>
       <img
@@ -25,18 +28,24 @@
 
     <ul
       v-if="open"
+      :id="listId"
       class="app-select__list"
       role="listbox"
     >
       <li
-        v-for="option in options"
+        v-for="(option, index) in options"
+        :id="optionId(index)"
         :key="String(option.value)"
         role="option"
         :aria-selected="option.value === model"
       >
         <button
           type="button"
-          :class="['app-select__option', { 'app-select__option--active': option.value === model }]"
+          tabindex="-1"
+          :class="['app-select__option', {
+            'app-select__option--active': option.value === model,
+            'app-select__option--highlight': index === highlighted,
+          }]"
           @click="choose(option.value)"
         >
           {{ option.label }}
@@ -47,7 +56,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends string | number">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import chevronIcon from '@/assets/chevron.svg'
 
 const props = withDefaults(
@@ -64,16 +73,72 @@ const props = withDefaults(
 
 const model = defineModel<T>()
 const open = ref(false)
+const highlighted = ref(0)
 const root = ref<HTMLElement | null>(null)
+const listId = useId()
 
 const currentLabel = computed(() => (
   props.options.find((option) => option.value === model.value)?.label ?? props.placeholder
 ))
 
+function optionId(index: number) {
+  return `${listId}-option-${index}`
+}
+
+function highlightCurrent() {
+  const index = props.options.findIndex((option) => option.value === model.value)
+  highlighted.value = index >= 0 ? index : 0
+}
+
 function choose(value: T) {
   model.value = value
   open.value = false
 }
+
+function onKeydown(event: KeyboardEvent) {
+  if (props.disabled) {
+    return
+  }
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+
+    if (!open.value) {
+      open.value = true
+      return
+    }
+
+    highlighted.value = Math.min(highlighted.value + 1, props.options.length - 1)
+    return
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+
+    if (!open.value) {
+      open.value = true
+      return
+    }
+
+    highlighted.value = Math.max(highlighted.value - 1, 0)
+    return
+  }
+
+  if ((event.key === 'Enter' || event.key === ' ') && open.value) {
+    event.preventDefault()
+    const option = props.options[highlighted.value]
+
+    if (option) {
+      choose(option.value)
+    }
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    highlightCurrent()
+  }
+})
 
 function onDocumentClick(event: MouseEvent) {
   if (!root.value?.contains(event.target as Node)) {
@@ -181,6 +246,10 @@ onBeforeUnmount(() => {
 .app-select__option--active {
   background: #111;
   color: #fff;
+}
+
+.app-select__option--highlight:not(.app-select__option--active) {
+  background: #f4f5f6;
 }
 
 .app-select__option--active:hover {

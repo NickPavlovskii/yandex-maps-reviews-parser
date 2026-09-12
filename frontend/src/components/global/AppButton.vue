@@ -1,7 +1,7 @@
 <template>
   <v-btn
-    :class="['app-button', { 'app-button--border': withBorder }]"
-    :variant="withBorder ? 'outlined' : 'flat'"
+    :class="['app-button', { 'app-button--border': border }]"
+    :variant="border ? 'outlined' : 'flat'"
     :type="type"
     :disabled="disabled"
     :to="to || undefined"
@@ -65,7 +65,6 @@ const props = withDefaults(
     width?: string | number
     height?: string | number
     border?: boolean
-    outlined?: boolean
     disabled?: boolean
     type?: 'button' | 'submit'
     to?: RouteLocationRaw | string
@@ -83,7 +82,6 @@ const props = withDefaults(
     width: 'auto',
     height: 48,
     border: false,
-    outlined: false,
     disabled: false,
     type: 'button',
     to: '',
@@ -97,8 +95,6 @@ defineEmits<{
   click: [event: MouseEvent]
 }>()
 
-const withBorder = computed(() => props.border || props.outlined)
-
 const widthValue = computed(() => (
   typeof props.width === 'number' ? `${props.width}px` : props.width
 ))
@@ -110,9 +106,9 @@ const heightValue = computed(() => (
 
 <style scoped lang="scss">
 .app-button {
-  --app-button-bg: v-bind(bgColor);
-  --app-button-color: v-bind(color);
-  --app-button-border: v-bind(borderColor);
+  --app-button-bg: v-bind('props.bgColor');
+  --app-button-color: v-bind('props.color');
+  --app-button-border: v-bind('props.borderColor');
   --app-button-width: v-bind(widthValue);
   --app-button-height: v-bind(heightValue);
 

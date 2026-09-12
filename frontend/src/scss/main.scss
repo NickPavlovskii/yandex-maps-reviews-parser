@@ -13,6 +13,10 @@ body,
 }
 
 body {
-  background: #f4f6f9;
+  background: #f4f5f6;
   color: $black-color;
+}
+
+.v-application.app-root {
+  background: #f4f5f6 !important;
 }

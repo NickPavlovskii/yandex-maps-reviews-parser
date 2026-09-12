@@ -1,7 +1,7 @@
 <template>
-  <v-main class="default-main">
+  <div class="default-main">
     <router-view />
-  </v-main>
+  </div>
 </template>
 
 <style scoped>

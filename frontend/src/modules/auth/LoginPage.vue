@@ -57,17 +57,19 @@
         {{ authError }}
       </p>
 
-      <button
-        class="login__submit"
+      <app-button
         type="submit"
+        width="100%"
         :disabled="isSubmitting"
       >
         <span>{{ submitLabel }}</span>
-        <span
+        <template
           v-if="!isSubmitting"
-          aria-hidden="true"
-        >→</span>
-      </button>
+          #append
+        >
+          <span aria-hidden="true">→</span>
+        </template>
+      </app-button>
 
       <p class="login__note">
         Сессия защищена Sanctum: cookie выдаётся на домен приложения, SPA работает с тем же origin.
@@ -203,34 +205,9 @@ function loginError(error: unknown) {
   font-size: 14px;
 }
 
-.login__submit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 50px;
-  border: none;
-  border-radius: 999px;
-  background: #111;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.login__submit:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.login__submit:not(:disabled):hover {
-  background: #000;
-}
-
 .login__note {
   margin: 28px 0 0;
-  color: #9ea1a6;
+  color: var(--secondary-text-color);
   font-size: 13px;
   line-height: 1.5;
 }

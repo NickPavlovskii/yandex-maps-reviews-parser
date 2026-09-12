@@ -74,9 +74,9 @@ const props = withDefaults(
 const model = defineModel<string>({ default: '' })
 const inputId = useId()
 const revealed = ref(false)
-const canReveal = props.type === 'password'
+const canReveal = computed(() => props.type === 'password')
 const inputType = computed(() => {
-  if (!canReveal) {
+  if (!canReveal.value) {
     return props.type
   }
 
