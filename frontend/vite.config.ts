@@ -3,6 +3,20 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
 
+const laravelTarget = process.env.VITE_API_PROXY || 'http://localhost:8080'
+
+function laravelProxy(options: { spaGet?: boolean } = {}) {
+  return {
+    target: laravelTarget,
+    changeOrigin: true,
+    bypass(req: { method?: string }) {
+      if (options.spaGet && (req.method === 'GET' || req.method === 'HEAD')) {
+        return '/index.html'
+      }
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     vue(),
@@ -17,14 +31,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': {
-        target: process.env.VITE_API_PROXY || 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/up': {
-        target: process.env.VITE_API_PROXY || 'http://localhost:8080',
-        changeOrigin: true,
-      },
+      '/api': laravelProxy(),
+      '/up': laravelProxy(),
+      '/sanctum': laravelProxy(),
+      '/user': laravelProxy(),
+      '/logout': laravelProxy(),
+      '/login': laravelProxy({ spaGet: true }),
     },
   },
 })
