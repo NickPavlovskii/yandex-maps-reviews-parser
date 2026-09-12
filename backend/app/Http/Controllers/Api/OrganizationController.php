@@ -191,6 +191,21 @@ class OrganizationController extends Controller
                 in: 'query',
                 schema: new OA\Schema(type: 'integer', default: 50, maximum: 50),
             ),
+            new OA\Parameter(
+                name: 'q',
+                in: 'query',
+                schema: new OA\Schema(type: 'string'),
+            ),
+            new OA\Parameter(
+                name: 'sort',
+                in: 'query',
+                schema: new OA\Schema(type: 'string', enum: ['newest', 'oldest'], default: 'newest'),
+            ),
+            new OA\Parameter(
+                name: 'rating',
+                in: 'query',
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 5),
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Paginated reviews from local database'),
