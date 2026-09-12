@@ -8,7 +8,7 @@ Route::get('/', function () {
 });
 
 Route::post('/login', [AuthController::class, 'login'])
-    ->middleware('throttle:login')
+    ->middleware(['throttle:login-route', 'throttle:login'])
     ->name('login');
 
 Route::middleware('auth:sanctum')->group(function (): void {

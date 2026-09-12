@@ -70,11 +70,13 @@ class AuthenticationTest extends TestCase
 
     public function test_login_is_rate_limited_after_too_many_attempts(): void
     {
+        $maxAttempts = (int) config('auth.login.max_attempts');
+
         User::factory()->create([
             'email' => 'throttled@example.com',
         ]);
 
-        foreach (range(1, 5) as $attempt) {
+        foreach (range(1, $maxAttempts) as $attempt) {
             $this->postJson('/login', [
                 'email' => 'throttled@example.com',
                 'password' => 'wrong-password',
@@ -83,6 +85,31 @@ class AuthenticationTest extends TestCase
 
         $this->postJson('/login', [
             'email' => 'throttled@example.com',
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+    }
+
+    public function test_login_route_is_rate_limited_by_ip(): void
+    {
+        $routeMaxAttempts = (int) config('auth.login.route_max_attempts');
+
+        config([
+            'auth.login.max_attempts' => $routeMaxAttempts + 1,
+        ]);
+
+        User::factory()->create([
+            'email' => 'flood@example.com',
+        ]);
+
+        foreach (range(1, $routeMaxAttempts) as $attempt) {
+            $this->postJson('/login', [
+                'email' => 'flood@example.com',
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        $this->postJson('/login', [
+            'email' => 'flood@example.com',
             'password' => 'wrong-password',
         ])->assertStatus(429);
     }

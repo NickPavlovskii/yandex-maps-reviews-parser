@@ -20,9 +20,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)->by(
+            return (new Limit(
+                '',
+                (int) config('auth.login.max_attempts'),
+                (int) config('auth.login.decay_seconds'),
+            ))->by(
                 Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip())
             );
+        });
+
+        RateLimiter::for('login-route', function (Request $request) {
+            return (new Limit(
+                '',
+                (int) config('auth.login.route_max_attempts'),
+                (int) config('auth.login.route_decay_seconds'),
+            ))->by($request->ip());
         });
     }
 }

@@ -13,7 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $trustedProxies = env('TRUSTED_PROXIES', '*');
+
+        $middleware->trustProxies(
+            at: $trustedProxies === '*'
+                ? '*'
+                : array_values(array_filter(array_map('trim', explode(',', (string) $trustedProxies)))),
+        );
         $middleware->statefulApi();
         $middleware->alias([
             'parser.sync' => \App\Http\Middleware\EnsureParserSyncIsEnabled::class,

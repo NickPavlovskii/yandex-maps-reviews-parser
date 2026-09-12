@@ -75,6 +75,8 @@ docker compose up --build
 
 Первый экран SPA — логин. Регистрации нет, вход через сессионные cookie Sanctum (`GET /sanctum/csrf-cookie`, затем `POST /login`). После входа Vue ходит в API с `withCredentials`.
 
+Лимит входа: неудачные попытки на email+IP (`LOGIN_MAX_ATTEMPTS`) и отдельно любой `POST /login` с одного IP (`LOGIN_ROUTE_MAX_ATTEMPTS`), чтобы не гонять `Auth::attempt` при флуде. `TRUSTED_PROXIES=*` удобен для nginx в Docker: Laravel видит реальный IP клиента. На хостинге сузьте до IP балансировщика — иначе `X-Forwarded-For` можно подделать и обойти лимит.
+
 Сидер создаёт единственного пользователя:
 
 - email: `admin@example.com`

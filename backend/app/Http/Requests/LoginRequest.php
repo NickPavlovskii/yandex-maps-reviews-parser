@@ -40,7 +40,7 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->credentials())) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
 
             throw ValidationException::withMessages([
                 'email' => ['Неверный email или пароль.'],
@@ -52,7 +52,7 @@ class LoginRequest extends FormRequest
 
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), $this->maxAttempts())) {
             return;
         }
 
@@ -70,5 +70,15 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')->toString()).'|'.$this->ip());
+    }
+
+    private function maxAttempts(): int
+    {
+        return (int) config('auth.login.max_attempts');
+    }
+
+    private function decaySeconds(): int
+    {
+        return (int) config('auth.login.decay_seconds');
     }
 }
