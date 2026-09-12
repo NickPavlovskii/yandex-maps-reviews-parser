@@ -6,17 +6,6 @@ use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
 use Laravel\Sanctum\Sanctum;
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Stateful Domains
-    |--------------------------------------------------------------------------
-    |
-    | SPA на Vite (:5173) и API за nginx (:8080). Запросы с этих хостов
-    | получают сессионные cookie через EnsureFrontendRequestsAreStateful.
-    |
-    */
-
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', implode(',', array_filter([
         'localhost',
         'localhost:3000',
