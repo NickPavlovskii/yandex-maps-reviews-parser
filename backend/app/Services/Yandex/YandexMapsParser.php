@@ -43,12 +43,6 @@ class YandexMapsParser implements MapsParser
             $payload['reviews'] ?? [],
         );
 
-        if ($reviews === []) {
-            throw new ParserStructureChangedException(
-                'Yandex returned no reviews or the parser format has changed.',
-            );
-        }
-
         Log::info('parsing_completed', [
             'url' => $url,
             'reviews' => count($reviews),

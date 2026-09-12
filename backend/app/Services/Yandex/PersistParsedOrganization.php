@@ -17,7 +17,7 @@ class PersistParsedOrganization
         return DB::transaction(function () use ($organization, $parsed): Organization {
             $reviews = array_values(array_filter(
                 $parsed->reviews,
-                static fn (ReviewData $review): bool => filled($review->id),
+                static fn (ReviewData $review): bool => filled($review->yandexReviewId),
             ));
 
             $organization->fill([
@@ -33,14 +33,14 @@ class PersistParsedOrganization
 
             foreach ($reviews as $review) {
                 Review::query()->updateOrCreate(
-                    ['yandex_review_id' => $review->id],
+                    ['yandex_review_id' => $review->yandexReviewId],
                     [
                         'organization_id' => $organization->id,
                         'author' => $review->author,
                         'rating' => $review->rating,
                         'text' => $review->text,
-                        'business_reply' => $review->businessComment,
-                        'published_at' => $review->date,
+                        'business_reply' => $review->businessReply,
+                        'published_at' => $review->publishedAt,
                     ],
                 );
             }

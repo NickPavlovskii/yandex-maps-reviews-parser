@@ -1,6 +1,19 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import {
+  extractPagination,
+  extractReviews,
+  mapWithConcurrency,
+} from './reviews-pagination.js';
+import {
+  extractStateFromHtml,
+  htmlReviewPageCount,
+  looksLikeCaptcha,
+  reviewsCardPageUrl,
+} from './reviews-html.js';
+
+const HTTP_PAGE_CONCURRENCY = 5;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,15 +53,15 @@ function formatReviewDate(value) {
 
 function normalizeReview(review) {
   return {
-    id: review.reviewId != null ? String(review.reviewId) : null,
+    yandexReviewId: review.reviewId != null ? String(review.reviewId) : null,
     author: review.author?.name ?? null,
     rating: review.rating ?? null,
-    date: formatReviewDate(review.updatedTime ?? review.time ?? review.date),
     text: review.text ?? null,
+    businessReply: review.businessComment?.text ?? null,
+    publishedAt: formatReviewDate(review.updatedTime ?? review.time ?? review.date),
     language: review.textLanguage ?? null,
     likes: review.reactions?.likes ?? 0,
     dislikes: review.reactions?.dislikes ?? 0,
-    businessComment: review.businessComment?.text ?? null,
   };
 }
 
@@ -89,6 +102,8 @@ function applyOrganizationPayload(organization, payload) {
     company.reviewsCount ??
     data.reviewsCount ??
     company.reviewCount ??
+    data.params?.count ??
+    payload?.params?.count ??
     null;
 
   if (ratingsCount != null && organization.ratingsCount == null) {
@@ -148,6 +163,154 @@ async function openReviewsTab(page) {
       // отзывы уже открыты
     }
   }
+}
+
+function ingestFetchReviewsPayload(reviews, organization, payload) {
+  const responseReviews = extractReviews(payload);
+
+  for (const review of responseReviews) {
+    if (!review?.reviewId) {
+      continue;
+    }
+
+    reviews.set(String(review.reviewId), normalizeReview(review));
+  }
+
+  applyOrganizationPayload(organization, payload);
+
+  return {
+    responseReviews,
+    pagination: extractPagination(payload),
+  };
+}
+
+async function collectReviewsByScrolling(page, reviews) {
+  let previousReviewCount = -1;
+  let unchangedIterations = 0;
+
+  for (let i = 0; i < 100; i += 1) {
+    await scrollReviewsPanel(page);
+    await page.mouse.wheel(0, 2500);
+    await sleep(600);
+
+    const moreButtons = page.getByText(/показать ещё/i);
+    if (await moreButtons.count()) {
+      try {
+        await moreButtons.last().click({ timeout: 2000 });
+        await sleep(1800);
+      } catch {
+        // кнопка могла исчезнуть
+      }
+    }
+
+    if (reviews.size === previousReviewCount) {
+      unchangedIterations += 1;
+    } else {
+      unchangedIterations = 0;
+    }
+
+    previousReviewCount = reviews.size;
+
+    if (unchangedIterations >= 5) {
+      break;
+    }
+  }
+}
+
+function mergeOrganization(organization, parsed) {
+  if (parsed.businessId && !organization.businessId) {
+    organization.businessId = String(parsed.businessId);
+  }
+
+  if (parsed.name && !organization.name) {
+    organization.name = String(parsed.name);
+  }
+
+  if (parsed.rating != null && organization.rating == null) {
+    organization.rating = Number(parsed.rating);
+  }
+
+  if (parsed.ratingsCount != null && organization.ratingsCount == null) {
+    organization.ratingsCount = Number(parsed.ratingsCount);
+  }
+
+  if (parsed.reviewsCount != null && organization.reviewsCount == null) {
+    organization.reviewsCount = Number(parsed.reviewsCount);
+  }
+}
+
+function ingestRawReviews(reviews, rawReviews) {
+  for (const review of rawReviews) {
+    if (!review?.reviewId) {
+      continue;
+    }
+
+    reviews.set(String(review.reviewId), normalizeReview(review));
+  }
+}
+
+async function fetchHtmlCardPage(context, url) {
+  const response = await context.request.get(url, {
+    timeout: 25_000,
+    headers: {
+      accept: 'text/html,application/xhtml+xml',
+      'accept-language': 'ru-RU,ru;q=0.9',
+    },
+  });
+
+  if (response.status() === 403) {
+    const error = new Error('Yandex returned 403.');
+    error.code = 'BLOCKED';
+    throw error;
+  }
+
+  if (!response.ok()) {
+    throw new Error(`reviews card page failed: HTTP ${response.status()}`);
+  }
+
+  const html = await response.text();
+
+  if (looksLikeCaptcha(html)) {
+    const error = new Error('Yandex returned a captcha challenge.');
+    error.code = 'BLOCKED';
+    throw error;
+  }
+
+  return html;
+}
+
+async function collectReviewsFromHtmlPages({
+  context,
+  mapsUrl,
+  businessId,
+  reviews,
+  organization,
+}) {
+  const firstHtml = await fetchHtmlCardPage(context, reviewsCardPageUrl(mapsUrl, businessId, 1));
+  const first = extractStateFromHtml(firstHtml);
+
+  mergeOrganization(organization, first.organization);
+  ingestRawReviews(reviews, first.reviews);
+  log(`html page=1: ${first.reviews.length}, total: ${reviews.size}`);
+
+  const knownCount = organization.reviewsCount;
+  const totalPages = knownCount === 0 && first.reviews.length === 0
+    ? 1
+    : htmlReviewPageCount(knownCount || 600);
+  const pages = Array.from({ length: Math.max(totalPages - 1, 0) }, (_, index) => index + 2);
+
+  await mapWithConcurrency(pages, HTTP_PAGE_CONCURRENCY, async (pageNumber) => {
+    const html = await fetchHtmlCardPage(
+      context,
+      reviewsCardPageUrl(mapsUrl, businessId, pageNumber),
+    );
+    const extracted = extractStateFromHtml(html);
+    mergeOrganization(organization, extracted.organization);
+    ingestRawReviews(reviews, extracted.reviews);
+    log(`html page=${pageNumber}: ${extracted.reviews.length}, total: ${reviews.size}`);
+  });
+
+  return totalPages;
 }
 
 export async function launchBrowser() {
@@ -215,6 +378,9 @@ export async function parseOrganization(mapsUrl, options = {}) {
   };
 
   let reviewsRequests = 0;
+  let fetchReviewsPagination = null;
+  let collectionMode = 'none';
+  let htmlPages = 0;
 
   page.on('response', async (response) => {
     const responseUrl = response.url();
@@ -234,18 +400,17 @@ export async function parseOrganization(mapsUrl, options = {}) {
     }
 
     if (responseUrl.includes('/maps/api/business/fetchReviews')) {
-      reviewsRequests += 1;
+      const { responseReviews, pagination } = ingestFetchReviewsPayload(
+        reviews,
+        organization,
+        payload,
+      );
 
-      const responseReviews = payload?.data?.reviews ?? [];
-      for (const review of responseReviews) {
-        if (!review?.reviewId) {
-          continue;
-        }
-
-        reviews.set(String(review.reviewId), normalizeReview(review));
+      if (pagination.totalPages > 0) {
+        fetchReviewsPagination = pagination;
       }
 
-      applyOrganizationPayload(organization, payload);
+      reviewsRequests += 1;
       log(`fetchReviews: ${responseReviews.length}, total: ${reviews.size}`);
       return;
     }
@@ -261,38 +426,38 @@ export async function parseOrganization(mapsUrl, options = {}) {
       timeout: 60_000,
     });
 
-    await sleep(3000);
-    await openReviewsTab(page);
+    await sleep(1500);
 
-    let previousReviewCount = -1;
-    let unchangedIterations = 0;
+    const looksComplete = () => {
+      const expected = organization.reviewsCount ?? 0;
+      return expected === 0
+        ? reviews.size > 0 || collectionMode === 'html'
+        : reviews.size >= expected * 0.8;
+    };
 
-    for (let i = 0; i < 100; i += 1) {
-      await scrollReviewsPanel(page);
-      await page.mouse.wheel(0, 2500);
-      await sleep(1500);
-
-      const moreButtons = page.getByText(/показать ещё/i);
-      if (await moreButtons.count()) {
-        try {
-          await moreButtons.last().click({ timeout: 2000 });
-          await sleep(1800);
-        } catch {
-          // кнопка могла исчезнуть
+    if (organization.businessId) {
+      try {
+        htmlPages = await collectReviewsFromHtmlPages({
+          context,
+          mapsUrl,
+          businessId: organization.businessId,
+          reviews,
+          organization,
+        });
+        collectionMode = 'html';
+      } catch (error) {
+        if (error.code === 'BLOCKED') {
+          throw error;
         }
-      }
 
-      if (reviews.size === previousReviewCount) {
-        unchangedIterations += 1;
-      } else {
-        unchangedIterations = 0;
+        log(`html pagination failed, falling back to scroll: ${error.message}`);
       }
+    }
 
-      previousReviewCount = reviews.size;
-
-      if (unchangedIterations >= 5) {
-        break;
-      }
+    if (!looksComplete()) {
+      await openReviewsTab(page);
+      await collectReviewsByScrolling(page, reviews);
+      collectionMode = collectionMode === 'html' ? 'html+scroll' : 'scroll';
     }
 
     try {
@@ -321,17 +486,9 @@ export async function parseOrganization(mapsUrl, options = {}) {
       }
     }
 
-    if (reviewsRequests === 0) {
+    if (collectionMode === 'none' && reviewsRequests === 0) {
       const error = new Error(
         'Yandex returned no fetchReviews responses. Markup or internal API may have changed.',
-      );
-      error.code = 'STRUCTURE_CHANGED';
-      throw error;
-    }
-
-    if (reviews.size === 0) {
-      const error = new Error(
-        'Yandex returned no reviews or the parser format has changed.',
       );
       error.code = 'STRUCTURE_CHANGED';
       throw error;
@@ -344,6 +501,9 @@ export async function parseOrganization(mapsUrl, options = {}) {
       meta: {
         reviewsCollected: reviews.size,
         reviewsRequests,
+        collectionMode,
+        htmlPages,
+        totalPages: htmlPages || fetchReviewsPagination?.totalPages || null,
         url: mapsUrl,
       },
     };

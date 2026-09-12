@@ -39,6 +39,32 @@ class YandexParseTest extends TestCase
         Queue::assertPushed(ParseOrganizationReviewsJob::class);
     }
 
+    public function test_legacy_yandex_parse_alias_only_queues_a_job(): void
+    {
+        Queue::fake();
+
+        $this->mock(MapsParser::class, function (MockInterface $mock): void {
+            $mock->shouldNotReceive('parse');
+        });
+
+        $this->postJson('/api/yandex/parse', [
+            'url' => 'https://yandex.ru/maps/org/156355253662',
+        ])
+            ->assertAccepted()
+            ->assertJsonPath('data.parse_status', ParseStatus::Pending->value);
+
+        Queue::assertPushed(ParseOrganizationReviewsJob::class);
+    }
+
+    public function test_sync_parse_is_hidden_when_disabled(): void
+    {
+        config(['parser.sync_enabled' => false]);
+
+        $this->postJson('/api/organizations/parse', [
+            'url' => 'https://yandex.ru/maps/org/156355253662',
+        ])->assertNotFound();
+    }
+
     public function test_it_queues_parsing_for_a_different_organization_url(): void
     {
         Queue::fake();
@@ -115,17 +141,14 @@ class YandexParseTest extends TestCase
                         reviewsCount: 623,
                     ),
                     reviews: [
-                        new ReviewData(
-                            id: 'review-1',
-                            author: 'Иван',
-                            rating: 5,
-                            date: '2026-08-20',
-                            text: 'Отличное место',
-                            language: 'ru',
-                            likes: 0,
-                            dislikes: 0,
-                            businessComment: null,
-                        ),
+                        ReviewData::fromArray([
+                            'yandexReviewId' => 'review-1',
+                            'author' => 'Иван',
+                            'rating' => 5,
+                            'text' => 'Отличное место',
+                            'businessReply' => null,
+                            'publishedAt' => '2026-08-20',
+                        ]),
                     ],
                     meta: [],
                 ));
@@ -147,6 +170,37 @@ class YandexParseTest extends TestCase
 
         $this->assertSame(1, Organization::query()->count());
         $this->assertSame(1, Review::query()->count());
+    }
+
+    public function test_it_saves_an_organization_without_reviews(): void
+    {
+        $url = 'https://yandex.ru/maps/org/156355253662';
+
+        $this->mock(MapsParser::class, function (MockInterface $mock) use ($url): void {
+            $mock->shouldReceive('parse')
+                ->once()
+                ->with($url)
+                ->andReturn(new ParsedOrganization(
+                    organization: new OrganizationData(
+                        businessId: '156355253662',
+                        name: 'Новое место',
+                        rating: null,
+                        ratingsCount: 0,
+                        reviewsCount: 0,
+                    ),
+                    reviews: [],
+                    meta: [],
+                ));
+        });
+
+        $this->postJson('/api/organizations/parse', ['url' => $url])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.organization.parse_status', 'success')
+            ->assertJsonPath('data.pagination.total', 0);
+
+        $this->assertSame(1, Organization::query()->count());
+        $this->assertSame(0, Review::query()->count());
     }
 
     public function test_it_returns_parser_error_without_saving_reviews(): void

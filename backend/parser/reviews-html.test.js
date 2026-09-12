@@ -1,0 +1,84 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  extractStateFromHtml,
+  htmlReviewPageCount,
+  looksLikeCaptcha,
+  reviewsCardPageUrl,
+} from './reviews-html.js';
+
+const fixture = `
+<html><body>
+<script type="application/json">
+{
+  "stack": [{
+    "results": {
+      "items": [{
+        "title": "Грейсон",
+        "businessId": "73966097892",
+        "ratingData": {
+          "ratingCount": 345,
+          "ratingValue": 4.9,
+          "reviewCount": 182
+        },
+        "reviewResults": {
+          "reviews": [
+            {
+              "reviewId": "review-1",
+              "author": { "name": "Иван" },
+              "rating": 5,
+              "text": "Отлично",
+              "updatedTime": "2026-08-20T10:00:00.000Z"
+            }
+          ]
+        }
+      }]
+    }
+  }]
+}
+</script>
+</body></html>
+`;
+
+describe('reviewsCardPageUrl', () => {
+  it('builds a reviews card URL on the same host', () => {
+    assert.equal(
+      reviewsCardPageUrl('https://yandex.ru/maps/org/73966097892', '73966097892', 3),
+      'https://yandex.ru/maps/org/73966097892/reviews/?page=3',
+    );
+  });
+
+  it('omits page=1', () => {
+    assert.equal(
+      reviewsCardPageUrl('https://yandex.ru/maps/org/73966097892', '73966097892', 1),
+      'https://yandex.ru/maps/org/73966097892/reviews/',
+    );
+  });
+});
+
+describe('extractStateFromHtml', () => {
+  it('reads reviews and counters from the embedded JSON state', () => {
+    const extracted = extractStateFromHtml(fixture);
+
+    assert.equal(extracted.reviews.length, 1);
+    assert.equal(extracted.reviews[0].reviewId, 'review-1');
+    assert.equal(extracted.organization.name, 'Грейсон');
+    assert.equal(extracted.organization.reviewsCount, 182);
+    assert.equal(extracted.organization.ratingsCount, 345);
+    assert.equal(extracted.organization.rating, 4.9);
+  });
+});
+
+describe('htmlReviewPageCount', () => {
+  it('caps pages at the Yandex review limit', () => {
+    assert.equal(htmlReviewPageCount(182), 4);
+    assert.equal(htmlReviewPageCount(600), 12);
+  });
+});
+
+describe('looksLikeCaptcha', () => {
+  it('ignores captcha markup when reviews are present', () => {
+    assert.equal(looksLikeCaptcha(fixture), false);
+    assert.equal(looksLikeCaptcha('<html>smartcaptcha</html>'), true);
+  });
+});
