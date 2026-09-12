@@ -1,0 +1,6 @@
+node_modules
+test-results
+playwright-report
+blob-report
+parse-result.json
+parse-log.txt

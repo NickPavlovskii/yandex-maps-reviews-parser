@@ -1,0 +1,304 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Yandex Maps Reviews API",
+        "description": "В Swagger используйте POST /api/organizations/parse: вставьте ссылку на карточку Яндекс.Карт и получите организацию и отзывы в том виде, в каком они сохраняются в БД.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/",
+            "description": "Current host"
+        }
+    ],
+    "paths": {
+        "/api/organizations/parse": {
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Вставить ссылку, спарсить и увидеть то, что уйдёт в БД",
+                "description": "Синхронно открывает карточку в Playwright, сохраняет организацию и отзывы в БД и возвращает записанный результат. Запрос может идти 1–3 минуты.",
+                "operationId": "96ef8918de129196bead955ef2f346ba",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/YandexMapsUrlRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Организация и отзывы после записи в БД",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ParseDbResult"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Невалидная ссылка или парсер не смог получить отзывы"
+                    }
+                }
+            }
+        },
+        "/api/organizations": {
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Только поставить URL в очередь",
+                "operationId": "383fb9d4f91db3e68d25843995206055",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "url"
+                                ],
+                                "properties": {
+                                    "url": {
+                                        "type": "string",
+                                        "example": "https://yandex.ru/maps/org/156355253662"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Organization saved and parse job queued"
+                    },
+                    "422": {
+                        "description": "Invalid Yandex Maps URL"
+                    }
+                }
+            }
+        },
+        "/api/organizations/{id}": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Get organization and parse status",
+                "operationId": "11826ee077ae441c61f2bee8476e2a14",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization from local database"
+                    },
+                    "404": {
+                        "description": "Organization not found"
+                    }
+                }
+            }
+        },
+        "/api/organizations/{id}/reviews": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "List stored reviews",
+                "operationId": "9772573c0aaa3847cd06c54023afcf85",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50,
+                            "maximum": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated reviews from local database"
+                    },
+                    "404": {
+                        "description": "Organization not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "YandexMapsUrlRequest": {
+                "required": [
+                    "url"
+                ],
+                "properties": {
+                    "url": {
+                        "description": "Любая ссылка на карточку организации в Яндекс.Картах",
+                        "type": "string",
+                        "example": "https://yandex.ru/maps/org/156355253662"
+                    }
+                },
+                "type": "object"
+            },
+            "Organization": {
+                "description": "Запись организации, которая сохраняется в таблице organizations",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://yandex.ru/maps/org/156355253662"
+                    },
+                    "yandex_business_id": {
+                        "type": "string",
+                        "example": "156355253662"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Цех"
+                    },
+                    "avg_rating": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4.8
+                    },
+                    "ratings_count": {
+                        "type": "integer",
+                        "example": 701
+                    },
+                    "reviews_count": {
+                        "type": "integer",
+                        "example": 623
+                    },
+                    "parse_status": {
+                        "type": "string",
+                        "example": "success"
+                    },
+                    "last_parsed_at": {
+                        "type": "string",
+                        "example": "2026-09-11T20:00:00+00:00"
+                    }
+                },
+                "type": "object"
+            },
+            "Review": {
+                "description": "Запись отзыва, которая сохраняется в таблице reviews",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "yandex_review_id": {
+                        "type": "string",
+                        "example": "LvDp2rjgX9Z8-EKH7rMr6QGee7D1FDgH"
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "Иван"
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "text": {
+                        "type": "string",
+                        "example": "Отличное место"
+                    },
+                    "business_reply": {
+                        "type": "string",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "published_at": {
+                        "type": "string",
+                        "example": "2026-08-20"
+                    }
+                },
+                "type": "object"
+            },
+            "ParseDbResult": {
+                "description": "Данные, которые парсер записывает в БД. В reviews — первая страница из 50.",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "data": {
+                        "properties": {
+                            "organization": {
+                                "$ref": "#/components/schemas/Organization"
+                            },
+                            "reviews": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/Review"
+                                }
+                            },
+                            "pagination": {
+                                "properties": {
+                                    "page": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "per_page": {
+                                        "type": "integer",
+                                        "example": 50
+                                    },
+                                    "total": {
+                                        "type": "integer",
+                                        "example": 623
+                                    },
+                                    "last_page": {
+                                        "type": "integer",
+                                        "example": 13
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Organizations",
+            "description": "Parse and read Yandex Maps organizations"
+        }
+    ]
+}
