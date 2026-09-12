@@ -6,7 +6,10 @@ Thumbs.db
 
 /backend/vendor
 /backend/parser/node_modules
+/backend/parser/parse-result.json
+/backend/parser/parse-log.txt
 /backend/.env
+/backend/.phpunit.result.cache
 /backend/node_modules
 /backend/public/hot
 /backend/public/storage
