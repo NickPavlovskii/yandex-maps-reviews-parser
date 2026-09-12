@@ -33,6 +33,8 @@ export type Organization = {
   reviews_count: number | null
   parse_status: ParseStatus
   last_parsed_at: string | null
+  rating_breakdown: Array<{ rating: number; count: number }>
+  last_parse_duration_seconds: number | null
 }
 
 export type OrganizationResponse = {
