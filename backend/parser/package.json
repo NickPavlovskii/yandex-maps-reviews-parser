@@ -1,0 +1,13 @@
+{
+  "name": "yandex-maps-parser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "parse": "node yandex-parser.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
