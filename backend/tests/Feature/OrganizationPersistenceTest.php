@@ -5,6 +5,10 @@ namespace Tests\Feature;
 use App\Enums\ParseStatus;
 use App\Models\Organization;
 use App\Models\Review;
+use App\Services\Yandex\DTO\OrganizationData;
+use App\Services\Yandex\DTO\ParsedOrganization;
+use App\Services\Yandex\DTO\ReviewData;
+use App\Services\Yandex\PersistParsedOrganization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -66,5 +70,37 @@ class OrganizationPersistenceTest extends TestCase
 
         $this->assertTrue($first->is($second));
         $this->assertSame(1, Organization::query()->count());
+    }
+
+    public function test_it_computes_rating_from_reviews_when_yandex_omits_counters(): void
+    {
+        $organization = Organization::factory()->create([
+            'parse_status' => ParseStatus::Pending,
+        ]);
+
+        app(PersistParsedOrganization::class)->persist($organization, new ParsedOrganization(
+            new OrganizationData($organization->yandex_business_id, 'Цех', null, null, null),
+            [
+                ReviewData::fromArray([
+                    'yandexReviewId' => 'r-1',
+                    'author' => 'Анна',
+                    'rating' => 5,
+                    'text' => 'Ок',
+                ]),
+                ReviewData::fromArray([
+                    'yandexReviewId' => 'r-2',
+                    'author' => 'Олег',
+                    'rating' => 4,
+                    'text' => 'Норм',
+                ]),
+            ],
+            [],
+        ));
+
+        $organization->refresh();
+
+        $this->assertSame(4.5, (float) $organization->avg_rating);
+        $this->assertSame(2, $organization->ratings_count);
+        $this->assertSame(2, $organization->reviews_count);
     }
 }

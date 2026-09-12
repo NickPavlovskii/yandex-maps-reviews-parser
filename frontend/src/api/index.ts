@@ -1,9 +1,21 @@
 import type { App } from 'vue'
+import { getUser, login, logout } from './auth'
 import { apiClient } from './axios'
 import { getHealth } from './health'
+import { createOrganization, getOrganization, getOrganizationReviews } from './organizations'
 
 export const api = {
   axios: apiClient,
+  auth: {
+    login,
+    logout,
+    getUser,
+  },
+  organizations: {
+    create: createOrganization,
+    get: getOrganization,
+    reviews: getOrganizationReviews,
+  },
   health: {
     get: getHealth,
   },

@@ -11,7 +11,7 @@ class YandexMapsOrganizationUrl implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! is_string($value) || ! YandexMapsUrl::isOrganizationUrl($value)) {
-            $fail('The :attribute must be a link to a specific organization on Yandex Maps.');
+            $fail('Ссылка ведёт на поисковую выдачу, а не на карточку организации — не найден идентификатор.');
         }
     }
 }

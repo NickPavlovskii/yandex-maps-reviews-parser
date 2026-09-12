@@ -191,6 +191,21 @@ class OrganizationController extends Controller
                 in: 'query',
                 schema: new OA\Schema(type: 'integer', default: 50, maximum: 50),
             ),
+            new OA\Parameter(
+                name: 'q',
+                in: 'query',
+                schema: new OA\Schema(type: 'string'),
+            ),
+            new OA\Parameter(
+                name: 'sort',
+                in: 'query',
+                schema: new OA\Schema(type: 'string', enum: ['newest', 'oldest'], default: 'newest'),
+            ),
+            new OA\Parameter(
+                name: 'rating',
+                in: 'query',
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 5),
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Paginated reviews from local database'),
@@ -202,8 +217,20 @@ class OrganizationController extends Controller
         Organization $organization,
     ): AnonymousResourceCollection {
         $reviews = $organization->reviews()
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->when($request->filled('rating'), fn ($query) => $query->where('rating', $request->integer('rating')))
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $search = '%'.$request->string('q')->toString().'%';
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('text', 'like', $search)
+                        ->orWhere('author', 'like', $search);
+                });
+            })
+            ->when(
+                $request->sort() === 'oldest',
+                fn ($query) => $query->orderBy('published_at')->orderBy('id'),
+                fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'),
+            )
             ->paginate($request->perPage());
 
         return ReviewResource::collection($reviews);

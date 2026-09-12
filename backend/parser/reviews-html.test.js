@@ -67,6 +67,28 @@ describe('extractStateFromHtml', () => {
     assert.equal(extracted.organization.ratingsCount, 345);
     assert.equal(extracted.organization.rating, 4.9);
   });
+
+  it('reads rating when Yandex stores it as an object', () => {
+    const html = `
+<html><body>
+<script type="application/json">
+{
+  "card": {
+    "title": "Буйная Фляга",
+    "businessId": "1",
+    "rating": { "value": 4.6, "count": 12844 },
+    "reviewsCount": 296
+  }
+}
+</script>
+</body></html>
+`;
+    const extracted = extractStateFromHtml(html);
+
+    assert.equal(extracted.organization.rating, 4.6);
+    assert.equal(extracted.organization.ratingsCount, 12844);
+    assert.equal(extracted.organization.reviewsCount, 296);
+  });
 });
 
 describe('htmlReviewPageCount', () => {

@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ParseRunStatus;
 use App\Enums\ParseStatus;
 use App\Models\Organization;
+use App\Models\ParseRun;
 use App\Models\Review;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,16 +17,13 @@ class OrganizationApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->signIn();
     }
 
     public function test_guest_cannot_read_organizations(): void
     {
         auth()->logout();
-
         $organization = Organization::factory()->create();
-
         $this->getJson('/api/organizations/'.$organization->id)->assertUnauthorized();
         $this->getJson('/api/organizations/'.$organization->id.'/reviews')->assertUnauthorized();
     }
@@ -73,9 +72,90 @@ class OrganizationApiTest extends TestCase
             ->assertJsonPath('meta.current_page', 2);
     }
 
+    public function test_it_fills_rating_from_reviews_when_parser_left_them_empty(): void
+    {
+        $organization = Organization::factory()->create([
+            'avg_rating' => null,
+            'ratings_count' => null,
+            'reviews_count' => 2,
+            'parse_status' => ParseStatus::Success,
+        ]);
+
+        Review::factory()->for($organization)->create(['rating' => 5]);
+        Review::factory()->for($organization)->create(['rating' => 4]);
+
+        $this->getJson('/api/organizations/'.$organization->id)
+            ->assertOk()
+            ->assertJsonPath('data.avg_rating', 4.5)
+            ->assertJsonPath('data.ratings_count', 2);
+    }
+
     public function test_it_returns_not_found_for_unknown_organization(): void
     {
         $this->getJson('/api/organizations/999')->assertNotFound();
         $this->getJson('/api/organizations/999/reviews')->assertNotFound();
+    }
+
+    public function test_it_returns_rating_breakdown_and_parse_duration(): void
+    {
+        $organization = Organization::factory()->create([
+            'parse_status' => ParseStatus::Success,
+        ]);
+
+        ParseRun::query()->create([
+            'organization_id' => $organization->id,
+            'status' => ParseRunStatus::Success,
+            'started_at' => now()->subSeconds(72),
+            'finished_at' => now(),
+        ]);
+
+        Review::factory()->for($organization)->count(3)->create(['rating' => 5]);
+        Review::factory()->for($organization)->count(2)->create(['rating' => 4]);
+
+        $this->getJson('/api/organizations/'.$organization->id)
+            ->assertOk()
+            ->assertJsonPath('data.rating_breakdown.0.rating', 5)
+            ->assertJsonPath('data.rating_breakdown.0.count', 3)
+            ->assertJsonPath('data.rating_breakdown.1.rating', 4)
+            ->assertJsonPath('data.rating_breakdown.1.count', 2)
+            ->assertJsonPath('data.rating_breakdown.4.rating', 1)
+            ->assertJsonPath('data.rating_breakdown.4.count', 0)
+            ->assertJsonPath('data.last_parse_duration_seconds', 72);
+    }
+
+    public function test_it_filters_and_sorts_reviews(): void
+    {
+        $organization = Organization::factory()->create([
+            'parse_status' => ParseStatus::Success,
+        ]);
+
+        Review::factory()->for($organization)->create([
+            'author' => 'Марина',
+            'rating' => 5,
+            'text' => 'Лучший фильтр в районе',
+            'published_at' => '2026-09-09',
+        ]);
+
+        Review::factory()->for($organization)->create([
+            'author' => 'Пётр',
+            'rating' => 2,
+            'text' => 'Долго ждали завтрак',
+            'published_at' => '2026-09-08',
+        ]);
+
+        $this->getJson('/api/organizations/'.$organization->id.'/reviews?rating=5')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.author', 'Марина');
+
+        $this->getJson('/api/organizations/'.$organization->id.'/reviews?q=завтрак')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.author', 'Пётр');
+
+        $this->getJson('/api/organizations/'.$organization->id.'/reviews?sort=oldest')
+            ->assertOk()
+            ->assertJsonPath('data.0.author', 'Пётр')
+            ->assertJsonPath('data.1.author', 'Марина');
     }
 }
