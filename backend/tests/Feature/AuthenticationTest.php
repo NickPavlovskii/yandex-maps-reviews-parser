@@ -11,6 +11,16 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_migrate_creates_the_login_user(): void
+    {
+        $this->postJson('/login', [
+            'email' => 'admin@example.com',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.email', 'admin@example.com');
+    }
+
     public function test_seeder_creates_the_login_user(): void
     {
         $this->seed(DatabaseSeeder::class);

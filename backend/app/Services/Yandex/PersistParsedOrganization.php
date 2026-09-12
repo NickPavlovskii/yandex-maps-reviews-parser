@@ -20,11 +20,26 @@ class PersistParsedOrganization
                 static fn (ReviewData $review): bool => filled($review->yandexReviewId),
             ));
 
+            $reviewRatings = array_values(array_filter(
+                array_map(static fn (ReviewData $review): ?int => $review->rating, $reviews),
+                static fn (?int $rating): bool => $rating !== null,
+            ));
+
+            $avgRating = $parsed->organization->rating;
+            if ($avgRating === null && $reviewRatings !== []) {
+                $avgRating = round(array_sum($reviewRatings) / count($reviewRatings), 2);
+            }
+
+            $ratingsCount = $parsed->organization->ratingsCount;
+            if (($ratingsCount === null || $ratingsCount === 0) && $reviewRatings !== []) {
+                $ratingsCount = count($reviewRatings);
+            }
+
             $organization->fill([
                 'yandex_business_id' => $parsed->organization->businessId ?? $organization->yandex_business_id,
                 'name' => $parsed->organization->name ?? $organization->name,
-                'avg_rating' => $parsed->organization->rating,
-                'ratings_count' => $parsed->organization->ratingsCount,
+                'avg_rating' => $avgRating,
+                'ratings_count' => $ratingsCount,
                 'reviews_count' => $parsed->organization->reviewsCount ?? count($reviews),
                 'parse_status' => ParseStatus::Success,
                 'last_parsed_at' => now(),

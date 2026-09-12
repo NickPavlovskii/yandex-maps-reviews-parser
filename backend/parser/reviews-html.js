@@ -29,6 +29,44 @@ function parseJsonBlock(block) {
   }
 }
 
+export function readRating(value) {
+  if (value == null || value === '') {
+    return { rating: null, ratingsCount: null };
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return { rating: value, ratingsCount: null };
+  }
+
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+    return { rating: Number(value), ratingsCount: null };
+  }
+
+  if (typeof value === 'object') {
+    const rating = value.ratingValue ?? value.value ?? value.score ?? (
+      typeof value.rating === 'number' || typeof value.rating === 'string'
+        ? value.rating
+        : null
+    );
+    const ratingsCount =
+      value.ratingCount ??
+      value.ratingsCount ??
+      value.count ??
+      value.ratings ??
+      null;
+
+    return {
+      rating: rating != null && Number.isFinite(Number(rating)) ? Number(rating) : null,
+      ratingsCount:
+        ratingsCount != null && Number.isFinite(Number(ratingsCount))
+          ? Number(ratingsCount)
+          : null,
+    };
+  }
+
+  return { rating: null, ratingsCount: null };
+}
+
 function walkState(node, onReviewList, onOrganization) {
   if (!node || typeof node !== 'object') {
     return;
@@ -48,11 +86,34 @@ function walkState(node, onReviewList, onOrganization) {
   }
 
   if (node.ratingData && typeof node.ratingData === 'object') {
+    const parsed = readRating(node.ratingData);
     onOrganization({
       name: node.name ?? node.title ?? null,
-      rating: node.ratingData.ratingValue ?? null,
-      ratingsCount: node.ratingData.ratingCount ?? null,
-      reviewsCount: node.ratingData.reviewCount ?? null,
+      rating: parsed.rating,
+      ratingsCount: parsed.ratingsCount,
+      reviewsCount: node.ratingData.reviewCount ?? node.ratingData.reviewsCount ?? null,
+      businessId: node.businessId ?? node.id ?? null,
+    });
+  }
+
+  if (node.aggregateRating && typeof node.aggregateRating === 'object') {
+    const parsed = readRating(node.aggregateRating);
+    onOrganization({
+      name: node.name ?? node.title ?? null,
+      rating: parsed.rating,
+      ratingsCount: parsed.ratingsCount,
+      reviewsCount: node.aggregateRating.reviewCount ?? node.aggregateRating.reviewsCount ?? null,
+      businessId: node.businessId ?? node.id ?? null,
+    });
+  }
+
+  if (node.rating && typeof node.rating === 'object' && (node.businessId || node.title || node.name)) {
+    const parsed = readRating(node.rating);
+    onOrganization({
+      name: node.name ?? node.title ?? null,
+      rating: parsed.rating,
+      ratingsCount: parsed.ratingsCount,
+      reviewsCount: node.reviewsCount ?? node.reviewCount ?? null,
       businessId: node.businessId ?? node.id ?? null,
     });
   }

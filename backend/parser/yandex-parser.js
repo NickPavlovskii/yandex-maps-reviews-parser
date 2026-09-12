@@ -10,6 +10,7 @@ import {
   extractStateFromHtml,
   htmlReviewPageCount,
   looksLikeCaptcha,
+  readRating,
   reviewsCardPageUrl,
 } from './reviews-html.js';
 
@@ -85,17 +86,20 @@ function applyOrganizationPayload(organization, payload) {
     organization.name = String(name);
   }
 
-  const rating = company.rating ?? data.rating ?? company.score ?? null;
+  const ratingInfo = readRating(
+    company.ratingData ?? company.rating ?? data.rating ?? company.score ?? data.ratingData,
+  );
 
-  if (rating != null && organization.rating == null) {
-    organization.rating = Number(rating);
+  if (ratingInfo.rating != null && organization.rating == null) {
+    organization.rating = ratingInfo.rating;
   }
 
   const ratingsCount =
+    ratingInfo.ratingsCount ??
     company.ratingsCount ??
     company.ratingCount ??
     data.ratingsCount ??
-    company.reviewCount ??
+    data.ratingCount ??
     null;
 
   const reviewsCount =

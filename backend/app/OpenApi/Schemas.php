@@ -29,6 +29,18 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'reviews_count', type: 'integer', example: 623),
         new OA\Property(property: 'parse_status', type: 'string', example: 'success'),
         new OA\Property(property: 'last_parsed_at', type: 'string', example: '2026-09-11T20:00:00+00:00'),
+        new OA\Property(
+            property: 'rating_breakdown',
+            type: 'array',
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: 'rating', type: 'integer', example: 5),
+                    new OA\Property(property: 'count', type: 'integer', example: 902),
+                ],
+                type: 'object',
+            ),
+        ),
+        new OA\Property(property: 'last_parse_duration_seconds', type: 'integer', nullable: true, example: 72),
     ],
 )]
 #[OA\Schema(

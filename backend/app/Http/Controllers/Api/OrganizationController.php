@@ -202,8 +202,20 @@ class OrganizationController extends Controller
         Organization $organization,
     ): AnonymousResourceCollection {
         $reviews = $organization->reviews()
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->when($request->filled('rating'), fn ($query) => $query->where('rating', $request->integer('rating')))
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $search = '%'.$request->string('q')->toString().'%';
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('text', 'like', $search)
+                        ->orWhere('author', 'like', $search);
+                });
+            })
+            ->when(
+                $request->sort() === 'oldest',
+                fn ($query) => $query->orderBy('published_at')->orderBy('id'),
+                fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'),
+            )
             ->paginate($request->perPage());
 
         return ReviewResource::collection($reviews);
