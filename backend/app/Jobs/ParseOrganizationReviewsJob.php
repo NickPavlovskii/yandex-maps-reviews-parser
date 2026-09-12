@@ -7,22 +7,23 @@ use App\Enums\ParseRunStatus;
 use App\Enums\ParseStatus;
 use App\Models\Organization;
 use App\Models\ParseRun;
-use App\Services\Yandex\Exceptions\ParserBlockedException;
 use App\Services\Yandex\Exceptions\ParserStructureChangedException;
-use App\Services\Yandex\Exceptions\ParserTimeoutException;
 use App\Services\Yandex\PersistParsedOrganization;
 use App\Services\Yandex\YandexParserException;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class ParseOrganizationReviewsJob implements ShouldQueue
+class ParseOrganizationReviewsJob implements ShouldQueue, ShouldBeUnique
 {
     use Queueable;
 
     public int $tries = 3;
 
     public int $timeout = 360;
+
+    public int $uniqueFor = 600;
 
     public function __construct(public readonly int $organizationId) {}
 
@@ -75,8 +76,13 @@ class ParseOrganizationReviewsJob implements ShouldQueue
         }
 
         $organization->update([
-            'parse_status' => $this->statusFromException($exception),
+            'parse_status' => YandexParserException::parseStatus($exception),
         ]);
+    }
+
+    public function uniqueId(): string
+    {
+        return (string) $this->organizationId;
     }
 
     private function markRunFailed(ParseRun $run, YandexParserException $exception): void
@@ -97,15 +103,5 @@ class ParseOrganizationReviewsJob implements ShouldQueue
         }
 
         throw $exception;
-    }
-
-    private function statusFromException(?Throwable $exception): ParseStatus
-    {
-        return match (true) {
-            $exception instanceof ParserBlockedException => ParseStatus::FailedBlocked,
-            $exception instanceof ParserStructureChangedException => ParseStatus::FailedStructureChanged,
-            $exception instanceof ParserTimeoutException => ParseStatus::FailedUnavailable,
-            default => ParseStatus::FailedUnavailable,
-        };
     }
 }

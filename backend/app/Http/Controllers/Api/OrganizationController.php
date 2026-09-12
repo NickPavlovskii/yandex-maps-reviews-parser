@@ -28,8 +28,8 @@ class OrganizationController extends Controller
 
     #[OA\Post(
         path: '/api/organizations/parse',
-        summary: 'Вставить ссылку, спарсить и увидеть то, что уйдёт в БД',
-        description: 'Синхронно открывает карточку в Playwright, сохраняет организацию и отзывы в БД и возвращает записанный результат. Запрос может идти 1–3 минуты.',
+        summary: '[debug] Спарсить синхронно и сразу увидеть запись в БД',
+        description: 'Служебный маршрут для Swagger и локальной отладки. Пользовательский путь — POST /api/organizations (202 + очередь). В production маршрут выключен (PARSER_SYNC_ENABLED). Запрос может идти десятки секунд.',
         tags: ['Organizations'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -41,6 +41,7 @@ class OrganizationController extends Controller
                 description: 'Организация и отзывы после записи в БД',
                 content: new OA\JsonContent(ref: '#/components/schemas/ParseDbResult'),
             ),
+            new OA\Response(response: 404, description: 'Служебный sync выключен (production)'),
             new OA\Response(response: 422, description: 'Невалидная ссылка или парсер не смог получить отзывы'),
         ],
     )]
@@ -69,7 +70,9 @@ class OrganizationController extends Controller
                 'finished_at' => now(),
             ]);
 
-            $organization->update(['parse_status' => ParseStatus::FailedUnavailable]);
+            $organization->update([
+                'parse_status' => YandexParserException::parseStatus($exception),
+            ]);
 
             return response()->json([
                 'success' => false,
@@ -131,7 +134,12 @@ class OrganizationController extends Controller
     {
         $organization = $this->findOrCreateOrganization($request);
 
-        if ($organization->parse_status !== ParseStatus::InProgress) {
+        $alreadyQueued = in_array($organization->parse_status, [
+            ParseStatus::Pending,
+            ParseStatus::InProgress,
+        ], true);
+
+        if ($organization->wasRecentlyCreated || ! $alreadyQueued) {
             ParseOrganizationReviewsJob::dispatch($organization->id);
         }
 

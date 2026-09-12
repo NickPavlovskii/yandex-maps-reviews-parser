@@ -10,6 +10,7 @@ use App\Models\Review;
 use App\Services\Yandex\DTO\OrganizationData;
 use App\Services\Yandex\DTO\ParsedOrganization;
 use App\Services\Yandex\DTO\ReviewData;
+use App\Services\Yandex\Exceptions\ParserStructureChangedException;
 use App\Services\Yandex\YandexParserException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -61,7 +62,7 @@ class YandexParseTest extends TestCase
         config(['parser.sync_enabled' => false]);
 
         $this->postJson('/api/organizations/parse', [
-            'url' => 'https://yandex.ru/maps/org/156355253662',
+            'url' => 'https://google.com/not-maps',
         ])->assertNotFound();
     }
 
@@ -108,7 +109,7 @@ class YandexParseTest extends TestCase
         $this->postJson('/api/organizations', $payload)->assertAccepted();
 
         $this->assertSame(1, Organization::query()->count());
-        Queue::assertPushed(ParseOrganizationReviewsJob::class, 2);
+        Queue::assertPushed(ParseOrganizationReviewsJob::class, 1);
     }
 
     public function test_it_rejects_non_yandex_maps_urls(): void
@@ -218,5 +219,25 @@ class YandexParseTest extends TestCase
             ->assertJsonPath('success', false);
 
         $this->assertSame(0, Review::query()->count());
+    }
+
+    public function test_sync_parse_keeps_structure_changed_status(): void
+    {
+        $this->mock(MapsParser::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('parse')
+                ->once()
+                ->andThrow(new ParserStructureChangedException('Yandex returned no fetchReviews responses.'));
+        });
+
+        $this->postJson('/api/organizations/parse', [
+            'url' => 'https://yandex.ru/maps/org/156355253662',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false);
+
+        $this->assertDatabaseHas('organizations', [
+            'yandex_business_id' => '156355253662',
+            'parse_status' => ParseStatus::FailedStructureChanged->value,
+        ]);
     }
 }
