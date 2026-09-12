@@ -6,7 +6,7 @@ Laravel API + Vue 3 SPA. По ссылке на карточку организ�
 
 | Часть | Что |
 | --- | --- |
-| Backend | Laravel 13, PHP 8.4, JSON API |
+| Backend | Laravel 13, PHP 8.4, JSON API, Sanctum SPA |
 | Frontend | Vue 3, Vite, Vue Router, Vuetify 3, SCSS, Axios |
 | БД | PostgreSQL 16 |
 | Очереди / кэш | Redis 7 (`QUEUE_CONNECTION=redis`, `CACHE_STORE=redis`) |
@@ -73,7 +73,9 @@ docker compose up --build
 | Swagger (sync debug) | http://localhost:8080/api/documentation |
 | Laravel health | http://localhost:8080/up |
 
-Сидер создаёт пользователя:
+Первый экран SPA — логин. Регистрации нет, вход через сессионные cookie Sanctum (`GET /sanctum/csrf-cookie`, затем `POST /login`). После входа Vue ходит в API с `withCredentials`.
+
+Сидер создаёт единственного пользователя:
 
 - email: `admin@example.com`
 - пароль: `password`
@@ -97,7 +99,7 @@ frontend/                Vue 3 SPA
   src/components/global  общие UI-компоненты
   src/composables/
   src/layouts/           TheDefault, TheMain
-  src/modules/           страницы по доменам
+  src/modules/           страницы по доменам (auth, home)
   src/plugins/           Vuetify
   src/scss/
   src/store/

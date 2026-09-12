@@ -21,6 +21,24 @@ class YandexParseTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->signIn();
+    }
+
+    public function test_guest_cannot_queue_parsing(): void
+    {
+        auth()->logout();
+        Queue::fake();
+
+        $this->postJson('/api/organizations', [
+            'url' => 'https://yandex.ru/maps/org/156355253662',
+        ])->assertUnauthorized();
+
+        Queue::assertNothingPushed();
+    }
+
     public function test_it_queues_parsing_for_any_yandex_maps_url(): void
     {
         Queue::fake();
