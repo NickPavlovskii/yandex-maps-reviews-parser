@@ -1,0 +1,18 @@
+@use 'variables' as *;
+@use 'scrollbar';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: #f4f6f9;
+  color: $black-color;
+}
