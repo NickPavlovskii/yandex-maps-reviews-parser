@@ -12,14 +12,20 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
+      name: 'settings',
       meta: { layout: 'main', auth: true },
       component: () => import('@/modules/settings/SettingsPage.vue'),
     },
     {
+      path: '/reviews',
+      name: 'organization',
+      meta: { layout: 'main', auth: true },
+      component: () => import('@/modules/reviews/ReviewsPage.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'notFound',
-      meta: { layout: 'default', auth: true },
+      meta: { layout: 'default' },
       component: () => import('@/views/NotFoundPage.vue'),
     },
   ],
@@ -33,7 +39,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guest && authStore.user) {
-    return { name: 'home' }
+    return { name: 'settings' }
   }
 })
 
