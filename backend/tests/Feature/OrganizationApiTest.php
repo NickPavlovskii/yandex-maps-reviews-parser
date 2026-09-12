@@ -12,6 +12,23 @@ class OrganizationApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->signIn();
+    }
+
+    public function test_guest_cannot_read_organizations(): void
+    {
+        auth()->logout();
+
+        $organization = Organization::factory()->create();
+
+        $this->getJson('/api/organizations/'.$organization->id)->assertUnauthorized();
+        $this->getJson('/api/organizations/'.$organization->id.'/reviews')->assertUnauthorized();
+    }
+
     public function test_it_returns_organization_from_the_database(): void
     {
         $organization = Organization::factory()->create([
