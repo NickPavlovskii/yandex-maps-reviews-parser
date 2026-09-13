@@ -11,6 +11,7 @@ import {
   htmlReviewPageCount,
   looksLikeCaptcha,
   readRating,
+  extractAspects,
   reviewsCardPageUrl,
 } from './reviews-html.js';
 
@@ -116,6 +117,12 @@ function applyOrganizationPayload(organization, payload) {
 
   if (reviewsCount != null && organization.reviewsCount == null) {
     organization.reviewsCount = Number(reviewsCount);
+  }
+
+  const aspects = extractAspects(payload);
+
+  if (aspects.length) {
+    organization.aspects = aspects;
   }
 }
 
@@ -379,6 +386,7 @@ export async function parseOrganization(mapsUrl, options = {}) {
     rating: null,
     ratingsCount: null,
     reviewsCount: null,
+    aspects: [],
   };
 
   let reviewsRequests = 0;

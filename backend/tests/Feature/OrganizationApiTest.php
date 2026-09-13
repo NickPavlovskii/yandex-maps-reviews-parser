@@ -123,6 +123,37 @@ class OrganizationApiTest extends TestCase
             ->assertJsonPath('data.last_parse_duration_seconds', 72);
     }
 
+    public function test_it_returns_aspects_and_rating_history(): void
+    {
+        $organization = Organization::factory()->create([
+            'parse_status' => ParseStatus::Success,
+            'aspects' => [
+                ['text' => 'Еда', 'count' => 1389, 'positive' => 1080, 'negative' => 263],
+            ],
+        ]);
+
+        $first = $organization->snapshots()->create([
+            'avg_rating' => 4.38,
+            'ratings_count' => 500,
+            'reviews_count' => 521,
+        ]);
+        $first->forceFill(['created_at' => '2026-06-14 10:00:00'])->save();
+
+        $second = $organization->snapshots()->create([
+            'avg_rating' => 4.60,
+            'ratings_count' => 610,
+            'reviews_count' => 612,
+        ]);
+        $second->forceFill(['created_at' => '2026-09-12 09:41:00'])->save();
+
+        $this->getJson('/api/organizations/'.$organization->id)
+            ->assertOk()
+            ->assertJsonPath('data.aspects.0.text', 'Еда')
+            ->assertJsonPath('data.aspects.0.negative', 263)
+            ->assertJsonPath('data.rating_history.0.avg_rating', 4.38)
+            ->assertJsonPath('data.rating_history.1.reviews_count', 612);
+    }
+
     public function test_it_filters_and_sorts_reviews(): void
     {
         $organization = Organization::factory()->create([

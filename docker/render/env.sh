@@ -72,6 +72,35 @@ if [ -z "$PARSER_URL" ] && [ -n "$PARSER_PRIVATE_HOST" ]; then
   export PARSER_URL="http://${PARSER_PRIVATE_HOST}:${PARSER_PRIVATE_PORT:-3000}"
 fi
 
+# Railway often leaves RAILWAY_PRIVATE_DOMAIN empty when referenced from
+# another service. Private DNS `{service}.railway.internal` still works.
+if [ -z "$PARSER_URL" ] && [ -n "${RAILWAY_ENVIRONMENT:-}${RAILWAY_ENVIRONMENT_ID:-}${RAILWAY_PROJECT_ID:-}" ]; then
+  parser_service="${PARSER_SERVICE:-otklik-parser}"
+  parser_port="${PARSER_PRIVATE_PORT:-3000}"
+  export PARSER_URL="http://${parser_service}.railway.internal:${parser_port}"
+fi
+
+# Railway ${{service.PORT}} is empty when the reference uses the DNS
+# name instead of the service name, producing http://host: or http://host.
+PARSER_URL="${PARSER_URL%:}"
+if [ -n "$PARSER_URL" ]; then
+  parser_hostport="${PARSER_URL#http://}"
+  parser_hostport="${parser_hostport#https://}"
+  parser_hostport="${parser_hostport%%/*}"
+  case "$parser_hostport" in
+    *:*) ;;
+    *)
+      export PARSER_URL="${PARSER_URL%/}:${PARSER_PRIVATE_PORT:-3000}"
+      ;;
+  esac
+fi
+
+if [ -z "$PARSER_URL" ]; then
+  echo "WARNING: PARSER_URL is empty; Laravel will try local node" >&2
+else
+  echo "PARSER_URL=${PARSER_URL}" >&2
+fi
+
 mkdir -p storage/framework/cache/data \
   storage/framework/sessions \
   storage/framework/views \

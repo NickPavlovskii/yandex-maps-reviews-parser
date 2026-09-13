@@ -41,6 +41,7 @@ class PersistParsedOrganization
                 'avg_rating' => $avgRating,
                 'ratings_count' => $ratingsCount,
                 'reviews_count' => $parsed->organization->reviewsCount ?? count($reviews),
+                'aspects' => $parsed->organization->aspects,
                 'parse_status' => ParseStatus::Success,
                 'last_parsed_at' => now(),
             ]);

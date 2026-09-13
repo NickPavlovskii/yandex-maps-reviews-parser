@@ -50,6 +50,41 @@ export function formatReviewDate(value: string | null | undefined): string {
     .replace(/\sг\.?$/, '')
 }
 
+export function formatRatingPrecise(value: number | null | undefined): string {
+  if (value == null) {
+    return '—'
+  }
+
+  return value.toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+export function formatChartDay(value: string | null | undefined): string {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
+  return date
+    .toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+    .replace('.', '')
+}
+
+export function formatSigned(value: number, digits = 2): string {
+  return value.toLocaleString('ru-RU', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+    signDisplay: 'exceptZero',
+  })
+}
+
 export function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) {
     return '—'

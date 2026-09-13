@@ -67,6 +67,47 @@ export function readRating(value) {
   return { rating: null, ratingsCount: null };
 }
 
+export function extractAspects(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const data = payload.data ?? payload;
+  const company = data.company ?? data.organization ?? data;
+  const candidates = [
+    payload.aspects,
+    data.aspects,
+    company.aspects,
+    data.reviewAspects,
+    company.reviewAspects,
+  ];
+  const raw = candidates.find((item) => Array.isArray(item) && item.length > 0) ?? [];
+  const aspects = [];
+  const seen = new Set();
+
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+
+    const text = String(item.text ?? item.name ?? item.title ?? '').trim();
+
+    if (text === '' || seen.has(text)) {
+      continue;
+    }
+
+    seen.add(text);
+    aspects.push({
+      text,
+      count: Number(item.count ?? item.reviewsCount ?? 0) || 0,
+      positive: Number(item.positive ?? item.positives ?? item.positiveCount ?? 0) || 0,
+      negative: Number(item.negative ?? item.negatives ?? item.negativeCount ?? 0) || 0,
+    });
+  }
+
+  return aspects;
+}
+
 function walkState(node, onReviewList, onOrganization) {
   if (!node || typeof node !== 'object') {
     return;
