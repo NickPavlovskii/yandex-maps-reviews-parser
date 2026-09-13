@@ -28,19 +28,15 @@
             target="_blank"
             rel="noreferrer"
             :href="organization.url"
+            :append-icon="arrowRightIcon"
           >
             Карточка на картах
-            <template #append>
-              <span aria-hidden="true">↗</span>
-            </template>
           </app-button>
           <app-button
             :disabled="isRefreshing"
+            :prepend-icon="refreshIcon"
             @click="refresh"
           >
-            <template #prepend>
-              <span aria-hidden="true">↻</span>
-            </template>
             {{ refreshLabel }}
           </app-button>
         </div>
@@ -49,10 +45,10 @@
       <section class="rating-card">
         <div class="rating-card__score">
           <p class="rating-card__value">
-            {{ formatRating(organization.avg_rating) }}
+            <b>{{ formatRating(organization.avg_rating) }}</b>
             <span>из {{ MAX_RATING }}</span>
           </p>
-          <StarRating
+          <star-rating
             :value="organization.avg_rating"
             size="md"
           />
@@ -117,20 +113,30 @@
         <div class="chips">
           <button
             type="button"
-            :class="['chip', { 'chip--active': ratingFilter === null }]"
+            :class="['chip', 'chip--all', { 'chip--active': ratingFilter === null }]"
             @click="ratingFilter = null"
           >
             Все оценки
           </button>
-          <button
-            v-for="star in RATING_STARS"
-            :key="star"
-            type="button"
-            :class="['chip', { 'chip--active': ratingFilter === star }]"
-            @click="ratingFilter = star"
-          >
-            {{ star }}★
-          </button>
+          <div class="chips__stars">
+            <button
+              v-for="star in RATING_STARS"
+              :key="star"
+              type="button"
+              :class="['chip', { 'chip--active': ratingFilter === star }]"
+              @click="ratingFilter = star"
+            >
+              {{ star }}
+              <img
+                class="chip__star"
+                :src="starFilledIcon"
+                width="12"
+                height="12"
+                alt=""
+                aria-hidden="true"
+              >
+            </button>
+          </div>
         </div>
 
         <p
@@ -171,6 +177,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import searchIcon from '@/assets/search.svg'
+import arrowRightIcon from '@/assets/arrow-right.svg'
+import refreshIcon from '@/assets/refresh.svg'
+import starFilledIcon from '@/assets/star-filled.svg'
 import ReviewCard from '@/components/reviews/ReviewCard.vue'
 import ReviewsPager from '@/components/reviews/ReviewsPager.vue'
 import StarRating from '@/components/reviews/StarRating.vue'
@@ -365,6 +374,9 @@ onBeforeUnmount(() => {
 }
 
 .rating-card__value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0 0 10px;
   font-size: 56px;
   font-weight: 700;
@@ -372,11 +384,16 @@ onBeforeUnmount(() => {
   line-height: 0.9;
 }
 
+.rating-card__value b {
+  font-weight: inherit;
+}
+
 .rating-card__value span {
-  margin-left: 6px;
   color: var(--secondary-text-color);
   font-size: 16px;
   font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 .rating-card__caption {
@@ -475,11 +492,23 @@ onBeforeUnmount(() => {
 .chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   margin-bottom: 16px;
 }
 
+.chips__stars {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+}
+
 .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   height: 36px;
   padding: 0 14px;
   border: none;
@@ -489,6 +518,17 @@ onBeforeUnmount(() => {
   color: #111;
   font-size: 14px;
   cursor: pointer;
+}
+
+.chip__star {
+  display: block;
+  flex-shrink: 0;
+}
+
+.chips__stars .chip {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 8px;
 }
 
 .chip--active {
@@ -554,6 +594,10 @@ onBeforeUnmount(() => {
   .feed__tools :deep(.app-select) {
     width: 100%;
     min-width: 0;
+  }
+
+  .chips__stars {
+    flex: 1 1 100%;
   }
 }
 </style>

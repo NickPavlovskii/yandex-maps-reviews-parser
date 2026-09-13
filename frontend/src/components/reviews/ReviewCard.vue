@@ -4,7 +4,7 @@
     <div class="review__body">
       <header class="review__head">
         <strong>{{ review.author || 'Без имени' }}</strong>
-        <StarRating :value="review.rating" />
+        <star-rating :value="review.rating" />
         <time>{{ formatReviewDate(review.published_at) }}</time>
       </header>
       <p class="review__text">

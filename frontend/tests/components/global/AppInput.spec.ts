@@ -35,6 +35,19 @@ describe('AppInput', () => {
     expect(wrapper.get('.app-input__reveal').attributes('aria-pressed')).toBe('true')
   })
 
+  it('очищает значение по кнопке', async () => {
+    const wrapper = mount(AppInput, {
+      props: {
+        clearable: true,
+        modelValue: 'https://yandex.ru/maps/org/1',
+      },
+    })
+
+    await wrapper.get('.app-input__clear').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([''])
+  })
+
   it('не рисует кнопку глаза у обычного поля', () => {
     const wrapper = mount(AppInput, {
       props: { type: 'text', modelValue: '' },

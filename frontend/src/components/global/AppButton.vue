@@ -17,6 +17,8 @@
       <img
         alt=""
         class="app-button__icon app-button__icon--prepend"
+        width="16"
+        height="16"
         :src="prependIcon"
       >
     </template>
@@ -37,6 +39,8 @@
       <img
         alt=""
         class="app-button__icon app-button__icon--append"
+        width="16"
+        height="16"
         :src="appendIcon"
       >
     </template>
@@ -156,6 +160,16 @@ const heightValue = computed(() => (
 
 .app-button:disabled {
   opacity: 0.6;
+}
+
+.app-button__icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.app-button:not(.app-button--border) .app-button__icon {
+  filter: brightness(0) invert(1);
 }
 
 .app-button__icon--prepend {

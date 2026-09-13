@@ -31,6 +31,19 @@
         <slot name="trail" />
       </span>
       <button
+        v-if="canClear"
+        class="app-input__clear"
+        type="button"
+        aria-label="Очистить"
+        :disabled="disabled"
+        @click.stop.prevent="clear"
+      >
+        <v-icon
+          icon="mdi-close"
+          size="18"
+        />
+      </button>
+      <button
         v-if="canReveal"
         class="app-input__reveal"
         type="button"
@@ -60,6 +73,7 @@
  * @param {String} [autocomplete = 'off'] - значение autocomplete
  * @param {Boolean} [disabled = false] - заблокировать поле
  * @param {Boolean} [required = false] - обязательное поле
+ * @param {Boolean} [clearable = false] - кнопка очистки значения
  */
 import { computed, ref, useId } from 'vue'
 
@@ -71,6 +85,7 @@ const props = withDefaults(
     autocomplete?: string
     disabled?: boolean
     required?: boolean
+    clearable?: boolean
   }>(),
   {
     label: '',
@@ -79,6 +94,7 @@ const props = withDefaults(
     autocomplete: 'off',
     disabled: false,
     required: false,
+    clearable: false,
   },
 )
 
@@ -86,6 +102,13 @@ const model = defineModel<string>({ default: '' })
 const inputId = useId()
 const revealed = ref(false)
 const canReveal = computed(() => props.type === 'password')
+const canClear = computed(() => (
+  props.clearable && model.value !== '' && !props.disabled && !canReveal.value
+))
+
+function clear() {
+  model.value = ''
+}
 const inputType = computed(() => {
   if (!canReveal.value) {
     return props.type
@@ -155,6 +178,7 @@ const revealIcon = computed(() => (
   right: 16px;
 }
 
+.app-input__clear,
 .app-input__reveal {
   position: absolute;
   top: 50%;
@@ -174,12 +198,15 @@ const revealIcon = computed(() => (
   transform: translateY(-50%);
 }
 
+.app-input__clear:hover:not(:disabled),
+.app-input__clear:focus-visible,
 .app-input__reveal:hover:not(:disabled),
 .app-input__reveal:focus-visible {
   color: #111;
   outline: none;
 }
 
+.app-input__clear:disabled,
 .app-input__reveal:disabled {
   cursor: default;
   opacity: 0.5;
@@ -203,8 +230,17 @@ const revealIcon = computed(() => (
 }
 
 .app-input__field:has(.app-input__trail) .app-input__control,
+.app-input__field:has(.app-input__clear) .app-input__control,
 .app-input__field:has(.app-input__reveal) .app-input__control {
   padding-right: 46px;
+}
+
+.app-input__field:has(.app-input__trail):has(.app-input__clear) .app-input__trail {
+  right: 44px;
+}
+
+.app-input__field:has(.app-input__trail):has(.app-input__clear) .app-input__control {
+  padding-right: 80px;
 }
 
 .app-input__control:-webkit-autofill,

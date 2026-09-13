@@ -61,14 +61,9 @@
         type="submit"
         width="100%"
         :disabled="isSubmitting"
+        :append-icon="isSubmitting ? '' : arrowRightIcon"
       >
-        <span>{{ submitLabel }}</span>
-        <template
-          v-if="!isSubmitting"
-          #append
-        >
-          <span aria-hidden="true">→</span>
-        </template>
+        {{ submitLabel }}
       </app-button>
 
       <p class="login__note">
@@ -84,6 +79,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { authStore } from '@/store/auth'
 import otklikMark from '@/assets/otklik-mark.png'
+import arrowRightIcon from '@/assets/arrow-right.svg'
 
 const router = useRouter()
 const route = useRoute()

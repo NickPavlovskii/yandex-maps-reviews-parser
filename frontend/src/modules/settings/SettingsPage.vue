@@ -29,6 +29,7 @@
           type="url"
           placeholder="https://yandex.ru/maps/org/..."
           required
+          clearable
           :disabled="organizationStore.isSaving"
         >
           <template #lead>
@@ -47,7 +48,14 @@
             <span
               class="connect__check"
               aria-hidden="true"
-            >✓</span>
+            >
+              <img
+                :src="checkCircleIcon"
+                width="18"
+                height="18"
+                alt=""
+              >
+            </span>
           </template>
         </app-input>
 
@@ -112,7 +120,14 @@
               rel="noreferrer"
             >
               Открыть на Яндекс.Картах
-              <span aria-hidden="true">↗</span>
+              <img
+                class="card__maps-icon"
+                :src="arrowRightIcon"
+                width="14"
+                height="14"
+                alt=""
+                aria-hidden="true"
+              >
             </a>
           </div>
 
@@ -122,11 +137,9 @@
               color="#111"
               border
               :disabled="organizationStore.isSaving || isBusy"
+              :prepend-icon="refreshIcon"
               @click="refresh"
             >
-              <template #prepend>
-                <span aria-hidden="true">↻</span>
-              </template>
               Обновить
             </app-button>
             <app-button
@@ -134,11 +147,9 @@
               color="#111"
               border
               :to="{ name: 'organization' }"
+              :append-icon="arrowRightIcon"
             >
               К отзывам
-              <template #append>
-                <span aria-hidden="true">→</span>
-              </template>
             </app-button>
           </div>
         </div>
@@ -173,6 +184,9 @@
 import { computed, onMounted, ref } from 'vue'
 import linkIcon from '@/assets/link.svg'
 import titleStroke from '@/assets/title-stroke.svg'
+import arrowRightIcon from '@/assets/arrow-right.svg'
+import refreshIcon from '@/assets/refresh.svg'
+import checkCircleIcon from '@/assets/check-circle.svg'
 import { FORMAT_ERROR, STATUS_LABELS } from '@/constants/organization'
 import { organizationStore } from '@/store/organization'
 import {
@@ -330,11 +344,12 @@ async function refresh() {
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: #2f8f5b;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+}
+
+.connect__check img {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .banner {
@@ -422,6 +437,9 @@ async function refresh() {
 }
 
 .card__maps {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #8b8e93;
   font-size: 14px;
   text-decoration: none;
