@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
 
@@ -41,6 +41,19 @@ export default defineConfig({
       '/user': laravelProxy(),
       '/logout': laravelProxy(),
       '/login': laravelProxy({ spaGet: true }),
+    },
+  },
+  test: {
+    environment: 'happy-dom',
+    setupFiles: ['./tests/setup.ts'],
+    include: ['tests/**/*.spec.ts'],
+    env: {
+      TZ: 'UTC',
+    },
+    server: {
+      deps: {
+        inline: ['vuetify'],
+      },
     },
   },
 })
