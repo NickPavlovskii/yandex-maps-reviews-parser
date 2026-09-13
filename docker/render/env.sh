@@ -6,15 +6,19 @@ if [ -n "$DATABASE_PRIVATE_URL" ]; then
   export DATABASE_URL="$DATABASE_PRIVATE_URL"
 fi
 
-if [ -n "$DATABASE_URL" ]; then
+if [ -n "$PGHOST" ] && [ -n "$PGPASSWORD" ]; then
+  export DB_CONNECTION=pgsql
+  export DB_HOST="$PGHOST"
+  export DB_PORT="${PGPORT:-5432}"
+  export DB_DATABASE="${PGDATABASE:-railway}"
+  export DB_USERNAME="${PGUSER:-postgres}"
+  export DB_PASSWORD="$PGPASSWORD"
+  unset DB_URL
+  unset DATABASE_URL
+elif [ -n "$DATABASE_URL" ]; then
+  export DB_CONNECTION=pgsql
   export DB_URL="$DATABASE_URL"
 fi
-
-if echo "${DB_URL:-}${DATABASE_URL:-}" | grep -qi 'postgres'; then
-  export DB_CONNECTION=pgsql
-fi
-
-unset PGPASSWORD
 
 if [ -z "$REDIS_URL" ] && [ -n "$REDIS_PRIVATE_URL" ]; then
   export REDIS_URL="$REDIS_PRIVATE_URL"
