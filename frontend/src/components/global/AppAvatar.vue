@@ -1,7 +1,6 @@
 <template>
   <span
-    class="app-avatar"
-    :class="{ 'app-avatar--image': Boolean(src) }"
+    :class="['app-avatar', { 'app-avatar--image': Boolean(src) }]"
     :style="sizeStyle"
     :aria-hidden="label ? undefined : true"
     :aria-label="label || undefined"
@@ -23,6 +22,14 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Круглый аватар: фото автора или инициалы, если изображения нет.
+ *
+ * @param {String} [name = ''] - имя для инициалов
+ * @param {String} [src = ''] - URL изображения
+ * @param {Number} [size = 36] - размер в пикселях
+ * @param {String} [label = ''] - подпись для скринридеров
+ */
 import { computed } from 'vue'
 import { authorInitials } from '@/utils/format'
 
@@ -58,7 +65,7 @@ const sizeStyle = computed(() => ({
   overflow: hidden;
   border-radius: 50%;
   background: #f0f1f2;
-  color: #8b8e93;
+  color: var(--muted-gray);
   font-weight: 600;
   line-height: 1;
 }

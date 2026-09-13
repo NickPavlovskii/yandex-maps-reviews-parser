@@ -14,6 +14,11 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Индикатор загрузки с опциональной подписью.
+ *
+ * @param {String} [label = ''] - текст рядом со спиннером
+ */
 withDefaults(
   defineProps<{
     label?: string

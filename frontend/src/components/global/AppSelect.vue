@@ -56,6 +56,14 @@
 </template>
 
 <script setup lang="ts" generic="T extends string | number">
+/**
+ * Выпадающий список с клавиатурной навигацией.
+ *
+ * @param {String|Number} [modelValue] - выбранное значение
+ * @param {Array} options - варианты списка: value и label
+ * @param {Boolean} [disabled = false] - заблокировать список
+ * @param {String} [placeholder = 'Выберите'] - текст, пока ничего не выбрано
+ */
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import chevronIcon from '@/assets/chevron.svg'
 

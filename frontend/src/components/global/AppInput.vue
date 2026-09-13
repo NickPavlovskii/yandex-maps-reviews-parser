@@ -50,6 +50,17 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Текстовое поле с меткой; для пароля показывает кнопку скрыть/показать.
+ *
+ * @param {String} [modelValue = ''] - значение поля
+ * @param {String} [label = ''] - подпись над полем
+ * @param {String} [type = 'text'] - тип input
+ * @param {String} [placeholder = ''] - плейсхолдер
+ * @param {String} [autocomplete = 'off'] - значение autocomplete
+ * @param {Boolean} [disabled = false] - заблокировать поле
+ * @param {Boolean} [required = false] - обязательное поле
+ */
 import { computed, ref, useId } from 'vue'
 
 const props = withDefaults(

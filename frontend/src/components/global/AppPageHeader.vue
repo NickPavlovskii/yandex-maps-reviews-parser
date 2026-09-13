@@ -43,6 +43,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Шапка страницы с заголовком, подзаголовком и слотом справа.
+ *
+ * @param {String} title - заголовок страницы
+ * @param {String} [subtitle = ''] - подзаголовок
+ * @param {String} [icon = ''] - имя иконки Vuetify
+ */
 withDefaults(
   defineProps<{
     title: string

@@ -32,6 +32,14 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Карточка со значением, заголовком и необязательной иконкой.
+ *
+ * @param {String} title - заголовок карточки
+ * @param {String|Number} value - основное значение
+ * @param {String} [icon = ''] - имя иконки Vuetify
+ * @param {String} [subtitle = ''] - подпись под значением
+ */
 withDefaults(
   defineProps<{
     title: string

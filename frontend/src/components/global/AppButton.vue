@@ -51,6 +51,25 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Кнопка с текстом, иконками и опциональной ссылкой.
+ *
+ * @param {String} [title = ''] - текст, если нет слота по умолчанию
+ * @param {String} [prependIcon = ''] - URL иконки слева
+ * @param {String} [appendIcon = ''] - URL иконки справа
+ * @param {String} [bgColor = '#111'] - цвет фона
+ * @param {String} [color = '#fff'] - цвет текста
+ * @param {String} [borderColor = '#ececee'] - цвет обводки
+ * @param {String|Number} [width = 'auto'] - ширина кнопки
+ * @param {String|Number} [height = 48] - высота кнопки
+ * @param {Boolean} [border = false] - показывать обводку
+ * @param {Boolean} [disabled = false] - заблокировать кнопку
+ * @param {String} [type = 'button'] - тип кнопки: button или submit
+ * @param {String|Object} [to = ''] - маршрут vue-router
+ * @param {String} [href = ''] - внешняя ссылка
+ * @param {String} [target = ''] - target ссылки
+ * @param {String} [rel = ''] - rel ссылки
+ */
 import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
