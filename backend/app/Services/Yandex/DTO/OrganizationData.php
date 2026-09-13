@@ -10,6 +10,7 @@ readonly class OrganizationData
         public ?float $rating,
         public ?int $ratingsCount,
         public ?int $reviewsCount,
+        public array $aspects = [],
     ) {}
 
     /**
@@ -23,6 +24,40 @@ readonly class OrganizationData
             rating: isset($payload['rating']) ? (float) $payload['rating'] : null,
             ratingsCount: isset($payload['ratingsCount']) ? (int) $payload['ratingsCount'] : null,
             reviewsCount: isset($payload['reviewsCount']) ? (int) $payload['reviewsCount'] : null,
+            aspects: self::aspectsFrom($payload['aspects'] ?? []),
         );
+    }
+
+    /**
+     * @return list<array{text: string, count: int, positive: int, negative: int}>
+     */
+    private static function aspectsFrom(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $aspects = [];
+
+        foreach ($value as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $text = trim((string) ($item['text'] ?? $item['name'] ?? ''));
+
+            if ($text === '') {
+                continue;
+            }
+
+            $aspects[] = [
+                'text' => $text,
+                'count' => (int) ($item['count'] ?? 0),
+                'positive' => (int) ($item['positive'] ?? 0),
+                'negative' => (int) ($item['negative'] ?? 0),
+            ];
+        }
+
+        return $aspects;
     }
 }

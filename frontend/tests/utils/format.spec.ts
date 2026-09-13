@@ -5,6 +5,7 @@ import {
   formatDuration,
   formatNumber,
   formatRating,
+  formatRatingPrecise,
   formatReviewDate,
   looksLikeYandexMapsUrl,
 } from '@/utils/format'
@@ -46,6 +47,16 @@ describe('formatReviewDate', () => {
     expect(formatReviewDate('2024-03-15T10:00:00.000Z')).toBe('15 марта 2024')
     expect(formatReviewDate('')).toBe('—')
     expect(formatReviewDate('не дата')).toBe('—')
+  })
+})
+
+describe('formatRatingPrecise', () => {
+  it('оставляет два знака после запятой', () => {
+    expect(formatRatingPrecise(4.6)).toBe((4.6).toLocaleString('ru-RU', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }))
+    expect(formatRatingPrecise(null)).toBe('—')
   })
 })
 

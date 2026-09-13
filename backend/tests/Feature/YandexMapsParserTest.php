@@ -87,6 +87,9 @@ class YandexMapsParserTest extends TestCase
                     'rating' => 4.8,
                     'ratingsCount' => 701,
                     'reviewsCount' => 2,
+                    'aspects' => [
+                        ['text' => 'Еда', 'count' => 10, 'positive' => 8, 'negative' => 2],
+                    ],
                 ],
                 'reviews' => [[
                     'yandexReviewId' => 'review-1',
@@ -117,5 +120,6 @@ class YandexMapsParserTest extends TestCase
         $this->assertSame('Спасибо', $review->business_reply);
         $this->assertSame('2026-08-20', $review->published_at?->toDateString());
         $this->assertSame(ParseStatus::Success, $organization->fresh()->parse_status);
+        $this->assertSame('Еда', $organization->fresh()->aspects[0]['text']);
     }
 }

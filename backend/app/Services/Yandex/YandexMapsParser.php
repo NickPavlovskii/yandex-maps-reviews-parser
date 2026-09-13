@@ -23,7 +23,20 @@ class YandexMapsParser implements MapsParser
 
         Log::info('parsing_started', ['url' => $url]);
 
-        $output = config('parser.url')
+        $parserUrl = config('parser.url');
+
+        if (! $parserUrl && app()->isProduction()) {
+            Log::error('parsing_failed', [
+                'url' => $url,
+                'error' => 'PARSER_URL is not configured',
+            ]);
+
+            throw new YandexParserException(
+                'PARSER_URL is not configured; production cannot run local node.',
+            );
+        }
+
+        $output = $parserUrl
             ? $this->parseViaService($url, $timeout)
             : $this->parseViaProcess($url, $timeout);
 

@@ -83,6 +83,8 @@
         </dl>
       </section>
 
+      <aspect-breakdown :aspects="organization.aspects ?? []" />
+
       <section class="feed">
         <div class="feed__toolbar">
           <h2>Отзывы {{ formatNumber(organization.reviews_count) }}</h2>
@@ -127,14 +129,18 @@
               @click="ratingFilter = star"
             >
               {{ star }}
-              <img
+              <svg
                 class="chip__star"
-                :src="starFilledIcon"
                 width="12"
                 height="12"
-                alt=""
+                viewBox="0 0 20 20"
                 aria-hidden="true"
               >
+                <path
+                  fill="currentColor"
+                  d="M10 1.4 12.47 7.1l6.23.6-4.72 4.14 1.44 6.1L10 14.7l-5.42 3.24 1.44-6.1L1.3 7.7l6.23-.6L10 1.4Z"
+                />
+              </svg>
             </button>
           </div>
         </div>
@@ -179,10 +185,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import searchIcon from '@/assets/search.svg'
 import arrowRightIcon from '@/assets/arrow-right.svg'
 import refreshIcon from '@/assets/refresh.svg'
-import starFilledIcon from '@/assets/star-filled.svg'
 import ReviewCard from '@/components/reviews/ReviewCard.vue'
 import ReviewsPager from '@/components/reviews/ReviewsPager.vue'
 import StarRating from '@/components/reviews/StarRating.vue'
+import AspectBreakdown from '@/components/reviews/AspectBreakdown.vue'
 import { MAX_RATING, RATING_STARS } from '@/constants/rating'
 import { organizationStore } from '@/store/organization'
 import {

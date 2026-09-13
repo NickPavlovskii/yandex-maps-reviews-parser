@@ -41,6 +41,31 @@ use OpenApi\Attributes as OA;
             ),
         ),
         new OA\Property(property: 'last_parse_duration_seconds', type: 'integer', nullable: true, example: 72),
+        new OA\Property(
+            property: 'aspects',
+            type: 'array',
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: 'text', type: 'string', example: 'Еда'),
+                    new OA\Property(property: 'count', type: 'integer', example: 1389),
+                    new OA\Property(property: 'positive', type: 'integer', example: 1080),
+                    new OA\Property(property: 'negative', type: 'integer', example: 263),
+                ],
+                type: 'object',
+            ),
+        ),
+        new OA\Property(
+            property: 'rating_history',
+            type: 'array',
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: 'at', type: 'string', example: '2026-09-12T09:41:00+00:00'),
+                    new OA\Property(property: 'avg_rating', type: 'number', format: 'float', example: 4.6),
+                    new OA\Property(property: 'reviews_count', type: 'integer', example: 612),
+                ],
+                type: 'object',
+            ),
+        ),
     ],
 )]
 #[OA\Schema(

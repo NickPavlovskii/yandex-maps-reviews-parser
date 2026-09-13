@@ -26,6 +26,8 @@ function makeOrganization(overrides: Partial<Organization> = {}): Organization {
     last_parsed_at: '2024-03-15T10:00:00.000Z',
     rating_breakdown: [{ rating: 5, count: 12 }],
     last_parse_duration_seconds: 15,
+    aspects: [],
+    rating_history: [],
     ...overrides,
   }
 }

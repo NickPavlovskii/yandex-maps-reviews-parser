@@ -34,6 +34,8 @@ class OrganizationResource extends JsonResource
                 ->values()
                 ->all(),
             'last_parse_duration_seconds' => $this->lastParseDurationSeconds(),
+            'aspects' => $this->aspects ?? [],
+            'rating_history' => $this->ratingHistory(),
         ];
     }
 }

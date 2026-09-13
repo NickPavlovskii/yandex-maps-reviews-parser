@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'reviews_count',
     'parse_status',
     'last_parsed_at',
+    'aspects',
 ])]
 class Organization extends Model
 {
@@ -31,6 +32,7 @@ class Organization extends Model
             'reviews_count' => 'integer',
             'parse_status' => ParseStatus::class,
             'last_parsed_at' => 'datetime',
+            'aspects' => 'array',
         ];
     }
 
@@ -97,5 +99,22 @@ class Organization extends Model
         }
 
         return (int) $run->started_at->diffInSeconds($run->finished_at);
+    }
+
+    /**
+     * @return list<array{at: string, avg_rating: float|null, reviews_count: int|null}>
+     */
+    public function ratingHistory(): array
+    {
+        return $this->snapshots()
+            ->orderBy('created_at')
+            ->get(['avg_rating', 'reviews_count', 'created_at'])
+            ->map(static fn (ReviewSnapshot $snapshot): array => [
+                'at' => $snapshot->created_at?->toIso8601String(),
+                'avg_rating' => $snapshot->avg_rating !== null ? (float) $snapshot->avg_rating : null,
+                'reviews_count' => $snapshot->reviews_count,
+            ])
+            ->values()
+            ->all();
     }
 }

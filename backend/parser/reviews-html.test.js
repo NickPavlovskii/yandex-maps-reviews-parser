@@ -5,6 +5,7 @@ import {
   htmlReviewPageCount,
   looksLikeCaptcha,
   reviewsCardPageUrl,
+  extractAspects,
 } from './reviews-html.js';
 
 const fixture = `
@@ -102,5 +103,24 @@ describe('looksLikeCaptcha', () => {
   it('ignores captcha markup when reviews are present', () => {
     assert.equal(looksLikeCaptcha(fixture), false);
     assert.equal(looksLikeCaptcha('<html>smartcaptcha</html>'), true);
+  });
+});
+
+describe('extractAspects', () => {
+  it('normalizes Yandex aspect rows from fetchReviews', () => {
+    const aspects = extractAspects({
+      data: {
+        aspects: [
+          { text: 'Еда', count: 1389, positive: 1080, negative: 263 },
+          { name: 'Кухня', count: 1053, positives: 802, negatives: 222 },
+          { text: 'Еда', count: 1, positive: 1, negative: 0 },
+        ],
+      },
+    });
+
+    assert.deepEqual(aspects, [
+      { text: 'Еда', count: 1389, positive: 1080, negative: 263 },
+      { text: 'Кухня', count: 1053, positive: 802, negative: 222 },
+    ]);
   });
 });

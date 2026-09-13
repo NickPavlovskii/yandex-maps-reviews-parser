@@ -35,6 +35,21 @@ export type Organization = {
   last_parsed_at: string | null
   rating_breakdown: Array<{ rating: number; count: number }>
   last_parse_duration_seconds: number | null
+  aspects: OrganizationAspect[]
+  rating_history: RatingHistoryPoint[]
+}
+
+export type OrganizationAspect = {
+  text: string
+  count: number
+  positive: number
+  negative: number
+}
+
+export type RatingHistoryPoint = {
+  at: string | null
+  avg_rating: number | null
+  reviews_count: number | null
 }
 
 export type OrganizationResponse = {

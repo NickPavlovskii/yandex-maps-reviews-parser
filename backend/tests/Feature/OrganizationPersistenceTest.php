@@ -103,4 +103,40 @@ class OrganizationPersistenceTest extends TestCase
         $this->assertSame(2, $organization->ratings_count);
         $this->assertSame(2, $organization->reviews_count);
     }
+
+    public function test_it_persists_review_aspects_from_the_parser(): void
+    {
+        $organization = Organization::factory()->create([
+            'parse_status' => ParseStatus::Pending,
+        ]);
+
+        app(PersistParsedOrganization::class)->persist($organization, new ParsedOrganization(
+            new OrganizationData(
+                $organization->yandex_business_id,
+                'Цех',
+                4.8,
+                701,
+                2,
+                [
+                    ['text' => 'Еда', 'count' => 1389, 'positive' => 1080, 'negative' => 263],
+                    ['text' => 'Кухня', 'count' => 1053, 'positive' => 802, 'negative' => 222],
+                ],
+            ),
+            [
+                ReviewData::fromArray([
+                    'yandexReviewId' => 'r-1',
+                    'author' => 'Анна',
+                    'rating' => 5,
+                    'text' => 'Ок',
+                ]),
+            ],
+            [],
+        ));
+
+        $organization->refresh();
+
+        $this->assertSame('Еда', $organization->aspects[0]['text']);
+        $this->assertSame(263, $organization->aspects[0]['negative']);
+        $this->assertSame('Кухня', $organization->aspects[1]['text']);
+    }
 }
