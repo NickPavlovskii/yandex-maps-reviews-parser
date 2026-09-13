@@ -1,0 +1,116 @@
+services:
+  - type: web
+    name: otklik-web
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./docker/render/web.Dockerfile
+    dockerContext: .
+    healthCheckPath: /up
+    envVars:
+      - fromGroup: otklik-app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: otklik-db
+          property: connectionString
+      - key: DB_URL
+        fromDatabase:
+          name: otklik-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: otklik-redis
+          type: keyvalue
+          property: connectionString
+      - key: PARSER_HOSTPORT
+        fromService:
+          name: otklik-parser
+          type: pserv
+          property: hostport
+
+  - type: worker
+    name: otklik-queue
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./docker/render/web.Dockerfile
+    dockerContext: .
+    dockerCommand: /usr/local/bin/queue-entrypoint.sh
+    envVars:
+      - fromGroup: otklik-app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: otklik-db
+          property: connectionString
+      - key: DB_URL
+        fromDatabase:
+          name: otklik-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: otklik-redis
+          type: keyvalue
+          property: connectionString
+      - key: PARSER_HOSTPORT
+        fromService:
+          name: otklik-parser
+          type: pserv
+          property: hostport
+
+  - type: pserv
+    name: otklik-parser
+    runtime: docker
+    plan: standard
+    region: frankfurt
+    dockerfilePath: ./backend/parser/Dockerfile
+    dockerContext: ./backend/parser
+
+  - type: keyvalue
+    name: otklik-redis
+    plan: starter
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+databases:
+  - name: otklik-db
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: otklik
+    user: otklik
+
+envVarGroups:
+  - name: otklik-app
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY_MATERIAL
+        generateValue: true
+      - key: APP_LOCALE
+        value: ru
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_SSLMODE
+        value: require
+      - key: REDIS_CLIENT
+        value: phpredis
+      - key: REDIS_CACHE_DB
+        value: "0"
+      - key: CACHE_STORE
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: SESSION_DRIVER
+        value: redis
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: TRUSTED_PROXIES
+        value: "*"
+      - key: PARSER_SYNC_ENABLED
+        value: "false"
+      - key: PARSER_TIMEOUT
+        value: "300"

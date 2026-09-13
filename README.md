@@ -58,6 +58,28 @@ docker compose exec php php artisan migrate --seed
 
 Очереди обрабатывает контейнер `queue` (`php artisan queue:work redis`).
 
+## Деплой на Render
+
+Фронт собирается в образ Laravel и отдаётся с того же домена, что API — куки Sanctum работают без отдельного Netlify.
+
+В репозитории уже есть `render.yaml`: web, очередь, Playwright-парсер, Redis и Postgres.
+
+1. Запушьте `main` на GitHub.
+2. На [dashboard.render.com](https://dashboard.render.com) → **New → Blueprint**.
+3. Выберите репозиторий. Render поднимет сервисы из YAML.
+4. После деплоя откройте URL сервиса `otklik-web` (`https://otklik-web-….onrender.com`).
+5. Логин тот же: `admin@example.com` / `password`.
+
+Парсеру нужен план **standard** (≈2 ГБ RAM), иначе Chromium не стартует. Postgres и Redis на Render платные. Ориентир: web + worker + Redis + маленькая БД + parser standard.
+
+Регион в blueprint — `frankfurt`.
+
+Локально тот же прод-образ:
+
+```bash
+docker build -f docker/render/web.Dockerfile -t otklik-web .
+```
+
 Frontend без Docker:
 
 ```bash
