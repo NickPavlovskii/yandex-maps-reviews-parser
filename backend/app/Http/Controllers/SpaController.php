@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class SpaController extends Controller
 {
