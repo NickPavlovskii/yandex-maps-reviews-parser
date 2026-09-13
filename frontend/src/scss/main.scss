@@ -18,5 +18,6 @@ body {
 }
 
 .v-application.app-root {
+  overflow-x: clip;
   background: #f4f5f6 !important;
 }

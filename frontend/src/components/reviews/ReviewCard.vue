@@ -38,7 +38,12 @@ defineProps<{
 .review {
   display: flex;
   gap: 14px;
+  min-width: 0;
   padding: 22px 24px;
+}
+
+.review__body {
+  min-width: 0;
 }
 
 .review + .review {
@@ -66,6 +71,7 @@ defineProps<{
   margin: 0;
   font-size: 15px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .reply {
@@ -88,5 +94,12 @@ defineProps<{
   color: #3d4044;
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .review {
+    padding: 18px 16px;
+  }
 }
 </style>

@@ -34,9 +34,9 @@
     >
       <li
         v-for="(option, index) in options"
+        role="option"
         :id="optionId(index)"
         :key="String(option.value)"
-        role="option"
         :aria-selected="option.value === model"
       >
         <button

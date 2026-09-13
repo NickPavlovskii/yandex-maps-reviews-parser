@@ -260,6 +260,7 @@ async function refresh() {
 <style scoped>
 .settings {
   width: min(760px, 100%);
+  min-width: 0;
   color: #111;
 }
 
@@ -481,7 +482,11 @@ async function refresh() {
   letter-spacing: -0.04em;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
+  .settings__title {
+    font-size: 28px;
+  }
+
   .connect__row,
   .card__top,
   .org__head {
@@ -489,13 +494,20 @@ async function refresh() {
     align-items: stretch;
   }
 
+  .connect__row :deep(.app-button),
+  .card__actions :deep(.app-button) {
+    width: 100%;
+  }
+
   .card__actions {
-    flex-wrap: wrap;
+    flex-direction: column;
+    width: 100%;
   }
 
   .stats {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    padding: 16px;
   }
 }
 </style>

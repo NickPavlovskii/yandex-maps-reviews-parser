@@ -35,13 +35,13 @@
             </template>
           </app-button>
           <app-button
-            :disabled="organizationStore.isSaving || isBusy"
+            :disabled="isRefreshing"
             @click="refresh"
           >
             <template #prepend>
               <span aria-hidden="true">↻</span>
             </template>
-            {{ organizationStore.isSaving || isBusy ? 'Обновляем…' : 'Обновить данные' }}
+            {{ refreshLabel }}
           </app-button>
         </div>
       </header>
@@ -196,6 +196,12 @@ const isBusy = computed(() =>
   && (organization.value.parse_status === 'pending' || organization.value.parse_status === 'in_progress'),
 )
 
+const isRefreshing = computed(() => organizationStore.isSaving || isBusy.value)
+
+const refreshLabel = computed(() => (
+  isRefreshing.value ? 'Обновляем…' : 'Обновить данные'
+))
+
 const maxBreakdown = computed(() => {
   const values = RATING_STARS.map((star) => breakdown(star))
   return Math.max(1, ...values)
@@ -272,6 +278,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .reviews-page {
   width: min(1040px, 100%);
+  min-width: 0;
   color: #111;
 }
 
@@ -299,12 +306,14 @@ onBeforeUnmount(() => {
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .hero__meta {
   margin: 0;
   color: var(--muted-gray);
   font-size: 14px;
+  overflow-wrap: break-word;
 }
 
 .hero__actions {
@@ -510,12 +519,41 @@ onBeforeUnmount(() => {
     align-items: stretch;
   }
 
-  .rating-card {
-    grid-template-columns: 1fr;
+  .hero__title {
+    font-size: 28px;
   }
 
-  .feed__tools :deep(.app-input) {
+  .hero__actions {
+    flex-direction: column;
     width: 100%;
+  }
+
+  .hero__actions :deep(.app-button) {
+    width: 100%;
+  }
+
+  .rating-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px 16px;
+  }
+
+  .rating-card__value {
+    font-size: 44px;
+  }
+
+  .rating-card__counts {
+    gap: 20px;
+  }
+
+  .rating-card__counts dd {
+    font-size: 28px;
+  }
+
+  .feed__tools :deep(.app-input),
+  .feed__tools :deep(.app-select) {
+    width: 100%;
+    min-width: 0;
   }
 }
 </style>

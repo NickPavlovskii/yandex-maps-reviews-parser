@@ -1,7 +1,7 @@
 <template>
   <v-btn
     :class="['app-button', { 'app-button--border': border }]"
-    :variant="border ? 'outlined' : 'flat'"
+    :variant="variant"
     :type="type"
     :disabled="disabled"
     :to="to || undefined"
@@ -113,6 +113,8 @@ const props = withDefaults(
 defineEmits<{
   click: [event: MouseEvent]
 }>()
+
+const variant = computed(() => (props.border ? 'outlined' : 'flat'))
 
 const widthValue = computed(() => (
   typeof props.width === 'number' ? `${props.width}px` : props.width
