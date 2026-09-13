@@ -11,6 +11,13 @@
 рейтинг (у Яндекса нет официального API — используется парсинг), сохраняет
 данные и отдаёт их через собственный API с постраничной навигацией.
 
+Демо: [https://niklad-otklik.up.railway.app](https://niklad-otklik.up.railway.app/)  
+Логин: `admin@example.com` / `password`.
+
+<p align="center">
+  <img src="docs/railway.png" alt="Схема сервисов на Railway: web, queue, parser, Postgres, Redis">
+</p>
+
 ## Стек
 
 - **Backend:** Laravel 13, PHP 8.3+, PostgreSQL 16, Redis 7
@@ -58,27 +65,107 @@ docker compose exec php php artisan migrate --seed
 
 Очереди обрабатывает контейнер `queue` (`php artisan queue:work redis`).
 
-## Деплой на Render
+## Хостинг
 
-Фронт собирается в образ Laravel и отдаётся с того же домена, что API — куки Sanctum работают без отдельного Netlify.
+Этот стек (Laravel + Postgres + Redis + Playwright) **не встаёт на бесплатный Render / Netlify**.
+Парсеру нужно ~2 ГБ RAM, плюс живые Postgres и Redis. Free-тарифы PaaS это не дают.
 
-В репозитории уже есть `render.yaml`: web, очередь, Playwright-парсер, Redis и Postgres.
+### Бесплатно и стабильно — Oracle Cloud Always Free
 
-1. Запушьте `main` на GitHub.
-2. На [dashboard.render.com](https://dashboard.render.com) → **New → Blueprint**.
-3. Выберите репозиторий. Render поднимет сервисы из YAML.
-4. После деплоя откройте URL сервиса `otklik-web` (`https://otklik-web-….onrender.com`).
-5. Логин тот же: `admin@example.com` / `password`.
+Always Free ARM-VM: 4 ядра и 24 ГБ RAM, хватает на текущий `docker compose`.
 
-Парсеру нужен план **standard** (≈2 ГБ RAM), иначе Chromium не стартует. Postgres и Redis на Render платные. Ориентир: web + worker + Redis + маленькая БД + parser standard.
-
-Регион в blueprint — `frankfurt`.
-
-Локально тот же прод-образ:
+1. Аккаунт на [cloud.oracle.com](https://cloud.oracle.com) (карта для проверки, в лимите не списывают).
+2. Create Instance: `VM.Standard.A1.Flex`, 4 OCPU / 24 GB, образ Ubuntu.
+3. В Security List откройте порты 22, 80, 443.
+4. На машине:
 
 ```bash
-docker build -f docker/render/web.Dockerfile -t otklik-web .
+sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
+git clone <repo-url>
+cd yandex-maps-reviews-parser
+sudo docker compose up --build -d
 ```
+
+Дальше поставьте Caddy/nginx на `:80` → `localhost:5173` или откройте `http://IP:5173`.
+В `SANCTUM_STATEFUL_DOMAINS` и `FRONTEND_URL` укажите этот хост (IP или домен).
+
+GitHub Student Pack (DigitalOcean / Azure) — тот же `docker compose`, но за учебный кредит.
+
+### Бесплатно на пару дней — туннель с вашего ПК
+
+Пока крутится локальный Docker:
+
+```bash
+winget install Cloudflare.cloudflared
+cloudflared tunnel --url http://localhost:5173
+```
+
+В `SANCTUM_STATEFUL_DOMAINS` добавьте выданный хост `….trycloudflare.com`,
+иначе логин по куке не пройдёт. ПК должен оставаться включённым. URL меняется
+при каждом запуске, для сдачи ТЗ лучше фиксированный хост на Oracle.
+
+### Railway
+
+Один домен: Vue собирается в образ Laravel (`docker/render/web.Dockerfile`).
+Нужны 5 сервисов в одном проекте: **Postgres**, **Redis**, **web**, **queue**, **parser**.
+
+1. Запушьте репозиторий на GitHub.
+2. [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**.
+3. **New → Database → PostgreSQL**, затем **New → Database → Redis**.
+4. Первый сервис (web): Settings → Build → Dockerfile path  
+   `docker/render/web.Dockerfile`. После деплоя: Settings → Networking → **Generate Domain**.
+5. **New → GitHub Repo** (тот же репозиторий) — это очередь.  
+   Settings → Deploy → Custom Start Command:  
+   `/usr/local/bin/queue-entrypoint.sh`  
+   Dockerfile тот же: `docker/render/web.Dockerfile`. Домен этой службе не нужен.
+6. **New → GitHub Repo** ещё раз — парсер.  
+   Settings → Root Directory: `backend/parser`.  
+   Settings → Resources: память **не меньше 2 GB**.
+7. Переменные — блок ниже. После сохранения **Redeploy** web и queue.
+
+Переменные **web** и **queue** (имена `Postgres` / `Redis` / `otklik-parser` подставьте как в кабинете):
+
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_KEY=base64:...
+APP_LOCALE=ru
+LOG_CHANNEL=stderr
+DB_CONNECTION=pgsql
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
+REDIS_CLIENT=phpredis
+REDIS_CACHE_DB=0
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+SESSION_SECURE_COOKIE=true
+TRUSTED_PROXIES=*
+PARSER_SYNC_ENABLED=false
+PARSER_TIMEOUT=300
+PARSER_URL=http://otklik-parser.railway.internal:${{otklik-parser.PORT}}
+PARSER_PRIVATE_PORT=${{otklik-parser.PORT}}
+APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+FRONTEND_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+SANCTUM_STATEFUL_DOMAINS=${{RAILWAY_PUBLIC_DOMAIN}}
+```
+
+`APP_KEY` один раз локально:
+
+```bash
+php -r "echo 'base64:'.base64_encode(random_bytes(32)), PHP_EOL;"
+```
+
+У queue в `APP_URL` / `FRONTEND_URL` / `SANCTUM_STATEFUL_DOMAINS` укажите домен **web**, не свой:
+
+```
+APP_URL=https://${{otklik-web.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+Логин: `admin@example.com` / `password`.  
+Миграции и сидер web делает при старте.
+
+Trial Railway (~$5) на парсер с 2 GB хватает ненадолго. Дальше — Hobby.
 
 Frontend без Docker:
 
